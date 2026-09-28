@@ -3,6 +3,9 @@
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
   <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
@@ -748,6 +751,21 @@
         </div>
 
         <div>
+          <label class="block font-bold text-stone-700 mb-1">樹種の写真・イラスト（任意）</label>
+          <div class="flex items-center gap-3">
+            <div id="spImagePreviewContainer" class="w-20 h-20 rounded-xl border border-stone-300 bg-stone-100 flex items-center justify-center overflow-hidden shrink-0 relative">
+              <img id="spImagePreview" src="" class="hidden w-full h-full object-cover">
+              <span id="spImagePlaceholder" class="text-stone-400 text-[10px]">写真なし</span>
+            </div>
+            <div class="flex-1">
+              <input type="file" id="spImageFile" accept="image/*" onchange="handleSpeciesImageUpload(event)" class="block w-full text-xs text-stone-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-tokiwa/10 file:text-tokiwa hover:file:bg-tokiwa/20 cursor-pointer">
+              <p class="text-[9.5px] text-stone-400 mt-1">※自動で幅900pxに圧縮保存されます（未選択時は標準イラスト）。</p>
+            </div>
+          </div>
+          <input type="hidden" id="spImageData">
+        </div>
+
+        <div>
           <label class="block font-bold text-stone-700 mb-1">推奨用土の配合</label>
           <input type="text" id="spSoil" placeholder="例: 赤玉土6 : 桐生砂4" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
         </div>
@@ -872,6 +890,9 @@
     <span id="toastMessage">処理が完了しました</span>
   </div>
 
+  <!-- 図鑑カードから直接写真変更するための隠しファイル入力 -->
+  <input type="file" id="speciesCardImageFileInput" accept="image/*" class="hidden" onchange="handleDirectSpeciesImageChange(event)">
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -910,6 +931,7 @@
     let currentTab = 'inventory';
     let currentCategoryFilter = 'all';
     let filterRepotOnly = false;
+    let targetSpeciesIdForImageChange = null;
 
     // 季節のアドバイス定義（1〜12月）
     const MONTHLY_GUIDE = {
@@ -1714,18 +1736,23 @@
 
       grid.innerHTML = list.map(s => {
         const cat = getCategoryBadge(s.category);
-        const img = SVG_ART[s.id] || SVG_ART.kuromatsu;
+        const img = s.imageUrl || SVG_ART[s.id] || SVG_ART.kuromatsu;
 
         return `
           <div class="bg-washi-card rounded-2xl border border-[#e2ddd0] washi-shadow washi-shadow-hover transition duration-200 overflow-hidden flex flex-col justify-between">
             <div>
-              <div class="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative border-b border-stone-200">
+              <div class="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative border-b border-stone-200 group/img">
                 <img src="${img}" alt="${s.name}" class="w-full h-full object-cover">
                 <div class="absolute top-2 left-2">
                   <span class="text-[9.5px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${cat.class}">
                     ${cat.label}
                   </span>
                 </div>
+                <!-- 写真変更ボタン -->
+                <button onclick="triggerSpeciesImageChange('${s.id}', event)" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1 backdrop-blur-sm transition shadow-sm cursor-pointer" title="この樹種の写真を変更">
+                  <i data-lucide="camera" class="w-2.5 h-2.5"></i>
+                  <span>写真変更</span>
+                </button>
               </div>
               <div class="p-4">
                 <h3 class="font-mincho text-base font-bold text-tokiwa-dark">${s.name}</h3>
@@ -1954,6 +1981,14 @@
       if (preset.soilFormula) document.getElementById('formSoilFormula').value = preset.soilFormula;
       if (preset.name) document.getElementById('formName').value = preset.name;
 
+      if (preset.imageUrl) {
+        document.getElementById('formImageData').value = preset.imageUrl;
+        const preview = document.getElementById('formImagePreview');
+        preview.src = preset.imageUrl;
+        preview.classList.remove('hidden');
+        document.getElementById('formImagePlaceholder').classList.add('hidden');
+      }
+
       document.getElementById('bonsaiFormModal').classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
     }
@@ -2175,8 +2210,61 @@
       }
     }
 
+    async function handleSpeciesImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressedBase64 = await compressImageFile(file);
+        document.getElementById('spImageData').value = compressedBase64;
+        const preview = document.getElementById('spImagePreview');
+        preview.src = compressedBase64;
+        preview.classList.remove('hidden');
+        document.getElementById('spImagePlaceholder').classList.add('hidden');
+      } catch (err) {
+        showToast('画像の読み込みに失敗しました', 'alert-circle');
+      }
+    }
+
+    function triggerSpeciesImageChange(speciesId, event) {
+      if (event) event.stopPropagation();
+      targetSpeciesIdForImageChange = speciesId;
+      const fileInput = document.getElementById('speciesCardImageFileInput');
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+      }
+    }
+
+    async function handleDirectSpeciesImageChange(e) {
+      const file = e.target.files[0];
+      if (!file || !targetSpeciesIdForImageChange) return;
+
+      try {
+        const compressedBase64 = await compressImageFile(file);
+        const speciesList = loadSpeciesList();
+        const target = speciesList.find(s => s.id === targetSpeciesIdForImageChange);
+        if (target) {
+          target.imageUrl = compressedBase64;
+          persistToLocalStorage();
+          renderSpeciesCatalog();
+          showToast(`「${target.name}」の写真を更新しました！`);
+          await saveSpeciesToCloud(target);
+        }
+      } catch (err) {
+        showToast('写真の保存に失敗しました', 'alert-circle');
+      } finally {
+        targetSpeciesIdForImageChange = null;
+      }
+    }
+
     function openNewSpeciesModal() {
       document.getElementById('speciesForm').reset();
+      document.getElementById('spImageData').value = '';
+      const preview = document.getElementById('spImagePreview');
+      if (preview) preview.classList.add('hidden');
+      const placeholder = document.getElementById('spImagePlaceholder');
+      if (placeholder) placeholder.classList.remove('hidden');
+
       document.getElementById('speciesFormModal').classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
     }
@@ -2193,6 +2281,7 @@
       const soil = document.getElementById('spSoil').value.trim() || '赤玉土7 : 桐生砂3';
       const desc = document.getElementById('spDesc').value.trim();
       const high = document.getElementById('spHighlights').value.trim() || '四季の姿';
+      const imgData = document.getElementById('spImageData').value || null;
 
       const repotStart = parseInt(document.getElementById('spRepotStart').value) || 3;
       const repotEnd = parseInt(document.getElementById('spRepotEnd').value) || 4;
@@ -2207,6 +2296,7 @@
         soilFormula: soil,
         description: desc,
         highlights: high,
+        imageUrl: imgData,
         schedule: [
           { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: repotStart, end: repotEnd, text: `${repotStart}〜${repotEnd}月: 植え替え適期` }] },
           { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: pruneStart, end: pruneEnd, text: `${pruneStart}〜${pruneEnd}月: 枝整理剪定` }] },
@@ -2420,7 +2510,8 @@
         speciesId: target.id,
         category: target.category,
         soilFormula: target.soilFormula,
-        name: `${target.name.split('（')[0]} 1号`
+        name: `${target.name.split('（')[0]} 1号`,
+        imageUrl: target.imageUrl || null
       });
     }
 
@@ -2469,6 +2560,9 @@
     window.openNewSpeciesModal = openNewSpeciesModal;
     window.closeSpeciesFormModal = closeSpeciesFormModal;
     window.handleSpeciesFormSubmit = handleSpeciesFormSubmit;
+    window.handleSpeciesImageUpload = handleSpeciesImageUpload;
+    window.triggerSpeciesImageChange = triggerSpeciesImageChange;
+    window.handleDirectSpeciesImageChange = handleDirectSpeciesImageChange;
     window.adoptSpecies = adoptSpecies;
     window.toggleDataMenu = toggleDataMenu;
     window.exportData = exportData;
