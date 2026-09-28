@@ -1,0 +1,20 @@
+{
+  "name": "盆栽管理アプリ",
+  "short_name": "盆栽管理",
+  "icons": [
+    {
+      "src": "bonsai.JPG",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "bonsai.JPG",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff"
+}
