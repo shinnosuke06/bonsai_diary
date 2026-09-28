@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Shippori Mincho & Zen Kaku Gothic New -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mincho: ['"Shippori Mincho"', 'serif'],
+            gothic: ['"Zen Kaku Gothic New"', 'sans-serif'],
+          },
+          colors: {
+            washi: '#f7f5f0',
+            'washi-card': '#fcfbf8',
+            tokiwa: {
+              DEFAULT: '#1b4332',
+              light: '#2d6a4f',
+              dark: '#081c15',
+            },
+            koke: {
+              DEFAULT: '#40916c',
+              light: '#74c69d',
+            },
+            shudei: {
+              DEFAULT: '#c85a32',
+              hover: '#a8421d',
+            },
+            kohaku: '#d97706',
+            kiwada: '#b45309',
+            sumi: '#2b2927',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f7f5f0;
+      color: #2b2927;
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      background-image: radial-gradient(#e5e0d4 0.75px, transparent 0.75px);
+      background-size: 24px 24px;
+    }
+    .font-mincho {
+      font-family: 'Shippori Mincho', serif;
+    }
+    /* 和紙カードの陰影 */
+    .washi-shadow {
+      box-shadow: 0 4px 20px -2px rgba(40, 35, 30, 0.06), 0 2px 6px -1px rgba(40, 35, 30, 0.04);
+    }
+    .washi-shadow-hover:hover {
+      box-shadow: 0 12px 28px -4px rgba(27, 67, 50, 0.12), 0 4px 10px -2px rgba(40, 35, 30, 0.06);
+    }
+    /* スクロールバー装飾 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #eeeae0;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c2baa8;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9d9480;
+    }
+    /* アニメーション */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    /* ガントチャートの今月ハイライト */
+    .current-month-col {
+      background-color: rgba(64, 145, 108, 0.08);
+      border-left: 2px dashed #40916c !important;
+      border-right: 2px dashed #40916c !important;
+    }
+
+    /* 入力時にスマホ画面が勝手にズーム（画面寄り）するのを防止 */
+    @media screen and (max-width: 768px) {
+      input[type="text"],
+      input[type="date"],
+      input[type="number"],
+      input[type="file"],
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-tokiwa-light selection:text-white text-[11px] sm:text-xs text-sumi">
+
+  <header class="sticky top-0 z-30 bg-[#fbf9f5]/95 backdrop-blur-md border-b border-[#e5e0d4] washi-shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-13 sm:h-14">
+        <!-- アプリロゴ -->
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-tokiwa flex items-center justify-center text-white shadow-md shadow-tokiwa/20">
+            <i data-lucide="sprout" class="w-4 h-4 stroke-[2.2]"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="font-mincho text-sm sm:text-base font-bold tracking-wider text-tokiwa-dark">盆栽手帖</h1>
+              <span class="text-[8.5px] tracking-widest px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">愛樹管理</span>
+            </div>
+            <p class="text-[9px] text-stone-500 font-light hidden sm:block">愛樹台帳 ＆ 年間栽培ガントチャート</p>
+          </div>
+        </div>
+
+        <!-- アクション：登録＆バックアップ -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- 植替検討期バッジ（クリックで絞り込み） -->
+          <button id="headerAlertBtn" onclick="toggleRepotFilter()" class="hidden items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 transition shadow-sm" title="2年以上植え替えていない盆栽を表示">
+            <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i>
+            <span class="hidden md:inline">植替検討期:</span>
+            <span id="headerAlertCount" class="font-bold text-amber-700">0鉢</span>
+          </button>
+
+          <!-- 新規登録ボタン -->
+          <button onclick="openNewBonsaiModal()" class="flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] font-semibold bg-tokiwa text-white hover:bg-tokiwa-light transition shadow-sm shadow-tokiwa/25 active:scale-95">
+            <i data-lucide="plus-circle" class="w-3 h-3"></i>
+            <span>盆栽を登録</span>
+          </button>
+
+          <!-- データバックアップ・復元ドロップダウン -->
+          <div class="relative">
+            <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="データバックアップ・復元">
+              <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+            </button>
+            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-stone-200 py-1 z-40 text-[11px] font-medium">
+              <button onclick="exportData()" class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-700">
+                <i data-lucide="download" class="w-3 h-3 text-emerald-700"></i>
+                <span>データ保存 (JSON)</span>
+              </button>
+              <label class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-700 cursor-pointer">
+                <i data-lucide="upload" class="w-3 h-3 text-amber-700"></i>
+                <span>データ復元 (JSON)</span>
+                <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importData(event)">
+              </label>
+              <div class="border-t border-stone-100 my-0.5"></div>
+              <button onclick="resetToSampleData()" class="w-full text-left px-3 py-1.5 hover:bg-rose-50 flex items-center gap-2 text-rose-700">
+                <i data-lucide="refresh-cw" class="w-3 h-3 text-rose-500"></i>
+                <span>初期サンプルに戻す</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="flex border-t border-[#eae5d8] gap-1 sm:gap-3 text-[11px] font-medium -mb-px overflow-x-auto no-scrollbar">
+        <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn py-1.5 px-2 sm:px-2.5 border-b-2 border-tokiwa text-tokiwa font-bold flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="tree-pine" class="w-3 h-3"></i>
+          <span>愛樹台帳（棚場）</span>
+          <span id="tabCountBadge" class="ml-0.5 text-[9px] px-1 py-0.2 rounded-full bg-stone-200 text-stone-700">3</span>
+        </button>
+        <button onclick="switchTab('gantt')" id="tab-gantt" class="tab-btn py-1.5 px-2 sm:px-2.5 border-b-2 border-transparent text-stone-600 hover:text-stone-900 flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="calendar-range" class="w-3 h-3"></i>
+          <span>手入れガントチャート</span>
+        </button>
+        <button onclick="switchTab('catalog')" id="tab-catalog" class="tab-btn py-1.5 px-2 sm:px-2.5 border-b-2 border-transparent text-stone-600 hover:text-stone-900 flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="book-open" class="w-3 h-3"></i>
+          <span>盆栽樹種図鑑（お迎えカタログ）</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <section class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-3">
+    <div id="seasonalBanner" class="bg-gradient-to-r from-[#204e3b] via-[#2d6a4f] to-[#3a7d5e] text-white rounded-xl p-3 sm:p-3.5 shadow-md shadow-tokiwa/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5">
+      <div class="flex items-start sm:items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0 border border-white/20">
+          <i data-lucide="sun-medium" class="w-4 h-4 text-amber-200"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span id="currentMonthBadge" class="font-mincho font-bold text-[10px] tracking-wider px-1.5 py-0.5 rounded bg-white/20 border border-white/30 text-white">9月の管理急所</span>
+            <span id="currentSeasonName" class="text-[9px] text-emerald-100 font-medium">【秋の彼岸・根の充実期】</span>
+          </div>
+          <p id="currentSeasonalAdvice" class="text-[10px] text-stone-100 mt-0.5 leading-relaxed">
+            朝夕の涼しさと共に根が再び動きます。秋肥を施して来春の芽吹きに備え、乾きに応じた水やりを。実ものや紅葉の色づきを楽しむ好期です。
+          </p>
+        </div>
+      </div>
+      <!-- サマリー統計 -->
+      <div class="flex items-center gap-2 self-stretch md:self-auto justify-end border-t md:border-t-0 border-white/15 pt-2 md:pt-0 shrink-0">
+        <div class="px-2 py-0.5 rounded-lg bg-white/10 text-center border border-white/15">
+          <p class="text-[8px] text-emerald-200">管理鉢数</p>
+          <p id="statTotalBonsai" class="font-mincho text-sm font-bold">3鉢</p>
+        </div>
+        <button onclick="toggleRepotFilter()" class="px-2 py-0.5 rounded-lg bg-amber-400/20 text-center border border-amber-300/40 hover:bg-amber-400/30 transition cursor-pointer">
+          <p class="text-[8px] text-amber-200 flex items-center justify-center gap-1">
+            <i data-lucide="alert-circle" class="w-2 h-2 text-amber-300"></i>植替検討期
+          </p>
+          <p id="statRepotNeeded" class="font-mincho text-sm font-bold text-amber-200">0鉢</p>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex-1">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: 愛樹台帳（棚場） -->
+    <!-- ========================================== -->
+    <section id="view-inventory" class="view-panel">
+      <!-- 検索・フィルター・並び替えバー -->
+      <div class="bg-washi-card p-3 sm:p-4 rounded-xl border border-[#e5e0d4] washi-shadow mb-5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- 検索入力 -->
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="searchInput" oninput="renderBonsaiList()" placeholder="銘・樹種名・樹形で検索（例: 黒松、瑞祥、懸崖）..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-stone-300 focus:outline-none focus:ring-1.5 focus:ring-tokiwa bg-white text-[11px] text-stone-800 placeholder-stone-400">
+        </div>
+
+        <!-- 分類フィルター -->
+        <div class="flex items-center gap-1 overflow-x-auto pb-0.5 md:pb-0 text-[11px] font-semibold">
+          <button onclick="setCategoryFilter('all')" class="cat-filter-btn px-2.5 py-1.5 rounded-lg transition bg-tokiwa text-white shadow-sm" data-category="all">すべて</button>
+          <button onclick="setCategoryFilter('conifer')" class="cat-filter-btn px-2.5 py-1.5 rounded-lg transition bg-white border border-stone-200 text-stone-600 hover:bg-stone-50" data-category="conifer">松柏</button>
+          <button onclick="setCategoryFilter('deciduous')" class="cat-filter-btn px-2.5 py-1.5 rounded-lg transition bg-white border border-stone-200 text-stone-600 hover:bg-stone-50" data-category="deciduous">雑木</button>
+          <button onclick="setCategoryFilter('flower')" class="cat-filter-btn px-2.5 py-1.5 rounded-lg transition bg-white border border-stone-200 text-stone-600 hover:bg-stone-50" data-category="flower">花もの</button>
+          <button onclick="setCategoryFilter('fruit')" class="cat-filter-btn px-2.5 py-1.5 rounded-lg transition bg-white border border-stone-200 text-stone-600 hover:bg-stone-50" data-category="fruit">実もの</button>
+        </div>
+
+        <!-- 並び替え選択 -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-[10px] text-stone-500 whitespace-nowrap">並び順:</span>
+          <select id="sortSelect" onchange="renderBonsaiList()" class="px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white text-[11px] text-stone-700 focus:outline-none focus:ring-1.5 focus:ring-tokiwa">
+            <option value="repotDesc">植替経過年数 (長い順)</option>
+            <option value="acquiredDesc">入手日 (新しい順)</option>
+            <option value="acquiredAsc">入手日 (古い順)</option>
+            <option value="nameAsc">銘・名称順</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 植替検討期フィルター中の案内バナー -->
+      <div id="repotFilterNotice" class="hidden mb-6 p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xs font-semibold text-amber-900">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+          <span>現在「植替検討期（前回の鉢替えから2年以上経過）」の鉢のみを表示しています。</span>
+        </div>
+        <button onclick="toggleRepotFilter()" class="text-xs text-amber-800 underline hover:text-amber-950 font-bold">すべて表示に戻す</button>
+      </div>
+
+      <!-- 愛樹カードグリッド -->
+      <div id="bonsaiGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- JSで動的にレンダリングされます -->
+      </div>
+
+      <!-- 盆栽が0件のときの表示 -->
+      <div id="emptyBonsaiState" class="hidden text-center py-16 bg-washi-card rounded-2xl border border-dashed border-stone-300 p-8">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center text-stone-400">
+          <i data-lucide="sprout" class="w-8 h-8"></i>
+        </div>
+        <h3 class="font-mincho text-lg font-bold text-stone-700">条件に該当する盆栽が見つかりませんでした</h3>
+        <p class="text-xs text-stone-500 mt-1">検索条件を変更するか、右上の「盆栽を登録」から愛樹を追加してください。</p>
+        <button onclick="openNewBonsaiModal()" class="mt-4 px-4 py-2 bg-tokiwa text-white text-xs font-semibold rounded-xl hover:bg-tokiwa-light transition">＋ 新しい盆栽を登録する</button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: 手入れガントチャート（年間スケジュール） -->
+    <!-- ========================================== -->
+    <section id="view-gantt" class="view-panel hidden">
+      <div class="bg-washi-card p-4 sm:p-5 rounded-2xl border border-[#e5e0d4] washi-shadow mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-emerald-100 text-emerald-800">
+                <i data-lucide="calendar-range" class="w-4 h-4"></i>
+              </span>
+              <h2 class="font-mincho text-base sm:text-lg font-bold text-tokiwa-dark">年間手入れガントチャート</h2>
+            </div>
+            <p class="text-[11px] text-stone-500 mt-0.5">園芸業界標準の月跨ぎワイドバー仕様。樹種ごとの適期（植え替え・剪定・芽摘み等）を俯瞰確認できます。</p>
+          </div>
+
+          <!-- 樹種選択セレクタ -->
+          <div class="flex items-center gap-2">
+            <label for="ganttSpeciesSelect" class="text-[11px] font-bold text-stone-600 whitespace-nowrap">表示樹種:</label>
+            <select id="ganttSpeciesSelect" onchange="renderDedicatedGantt()" class="px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white text-[11px] font-semibold text-stone-800 focus:ring-1.5 focus:ring-tokiwa focus:outline-none min-w-[160px]">
+              <!-- 動的生成 -->
+            </select>
+          </div>
+        </div>
+
+        <!-- 選択中の樹種概要サマリー -->
+        <div id="ganttSpeciesSummary" class="mt-3 p-2.5 rounded-xl bg-stone-50 border border-stone-200 flex flex-wrap items-center justify-between gap-2.5 text-[11px]">
+          <!-- JSで動的生成 -->
+        </div>
+
+        <!-- ガントチャート本体テーブルコンテナ -->
+        <div class="mt-4" id="dedicatedGanttContainer">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: 盆栽樹種図鑑（お迎えカタログ） -->
+    <!-- ========================================== -->
+    <section id="view-catalog" class="view-panel hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="p-1 rounded-lg bg-emerald-100 text-emerald-800">
+              <i data-lucide="book-open" class="w-4 h-4"></i>
+            </span>
+            <h2 class="font-mincho text-base sm:text-lg font-bold text-tokiwa-dark">盆栽樹種図鑑</h2>
+          </div>
+          <p class="text-[11px] text-stone-500 mt-0.5">代表的な樹種の特徴、四季の見どころ、推奨用土を掲載。気になる樹種をお迎えして台帳に直接登録できます。</p>
+        </div>
+        <button onclick="openNewSpeciesModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-800 text-white hover:bg-emerald-700 transition shadow-sm self-start sm:self-auto">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>＋ 新しい樹種を図鑑に追加</span>
+        </button>
+      </div>
+
+      <!-- 樹種カードグリッド -->
+      <div id="speciesCatalogGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- JSで動的生成 -->
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="mt-auto border-t border-[#e5e0d4] bg-[#f2efe9] py-6 text-center text-xs text-stone-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="sprout" class="w-4 h-4 text-tokiwa"></i>
+        <span class="font-mincho font-bold text-stone-700">盆栽手帖</span>
+        <span>— 愛樹の健やかな成長と共に</span>
+      </div>
+      <p class="text-[11px] text-stone-400">ブラウザローカル保存対応（外部通信不要・完全プライベート）</p>
+    </div>
+  </footer>
+
+
+  <!-- ======================================================== -->
+  <!-- MODAL: 個別カルテ（詳細モーダル） -->
+  <!-- ======================================================== -->
+  <div id="carteModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-3 sm:p-5 flex items-center justify-center">
+    <div class="relative w-full max-w-4xl bg-washi-card rounded-2xl border border-stone-200 washi-shadow overflow-hidden max-h-[92vh] flex flex-col animate-fade-in text-[11px]">
+      
+      <!-- ヘッダー -->
+      <div class="p-3.5 sm:px-6 border-b border-stone-200 bg-[#faf8f3] flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-tokiwa/10 text-tokiwa flex items-center justify-center font-mincho font-bold text-base border border-tokiwa/20">
+            銘
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h2 id="carteBonsaiName" class="font-mincho text-base sm:text-lg font-bold text-tokiwa-dark">銘</h2>
+              <span id="carteCategoryBadge" class="text-[9px] px-1.5 py-0.2 rounded-full font-bold">分類</span>
+            </div>
+            <p id="carteSpeciesName" class="text-[10px] text-stone-600 font-medium">樹種名</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button onclick="openEditBonsaiModal(currentCarteBonsaiId)" class="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="基本情報を編集">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="confirmDeleteBonsai(currentCarteBonsaiId)" class="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition" title="台帳から削除">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="closeCarteModal()" class="p-1.5 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-200/60 transition">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- スクロール可能ボディ -->
+      <div class="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+        
+        <!-- 植え替えアラートボックス（2年以上経過時） -->
+        <div id="carteRepotAlertBox" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-400/80 flex items-start gap-2.5 shadow-sm">
+          <div class="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="font-bold text-[11px] text-amber-950">植え替え検討期のアラート</h4>
+            <p id="carteRepotAlertText" class="text-[10px] text-amber-900 mt-0.5 leading-relaxed">
+              前回の植え替えから2年以上が経過しています。鉢内の根詰まりや水はけ悪化を防ぐため、適期に鉢替え・根さばきをご検討ください。
+            </p>
+            <button onclick="openAddTimelineModal(currentCarteBonsaiId, 'repot')" class="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-600 text-white hover:bg-amber-700 transition">
+              <i data-lucide="check-circle" class="w-3 h-3"></i>
+              <span>植え替え作業を記録して更新</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 上段：写真 ＆ 基本諸元スペック -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+          <!-- メイン写真 -->
+          <div class="md:col-span-5 rounded-xl overflow-hidden bg-stone-100 border border-stone-300/80 shadow-inner aspect-[4/3] relative flex items-center justify-center">
+            <img id="carteMainImage" src="" alt="盆栽写真" class="w-full h-full object-cover">
+          </div>
+
+          <!-- 諸元スペック表 -->
+          <div class="md:col-span-7 bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2.5">
+            <h3 class="font-mincho font-bold text-xs text-tokiwa border-b border-stone-100 pb-1.5 flex items-center gap-1.5">
+              <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i> 基本台帳情報
+            </h3>
+            <div class="grid grid-cols-2 gap-2 text-[10.5px]">
+              <div>
+                <span class="text-stone-400 block text-[9.5px]">樹形</span>
+                <span id="carteStyle" class="font-semibold text-stone-800">模様木</span>
+              </div>
+              <div>
+                <span class="text-stone-400 block text-[9.5px]">現在の鉢（号数・種別）</span>
+                <span id="cartePot" class="font-semibold text-stone-800">萬古焼 4号</span>
+              </div>
+              <div>
+                <span class="text-stone-400 block text-[9.5px]">入手日</span>
+                <span id="carteAcquiredDate" class="font-semibold text-stone-800">2022年4月10日</span>
+              </div>
+              <div>
+                <span class="text-stone-400 block text-[9.5px]">入手元</span>
+                <span id="carteAcquiredFrom" class="font-semibold text-stone-800">上野グリーンクラブ</span>
+              </div>
+              <div class="col-span-2 p-2 rounded-lg bg-stone-50 border border-stone-200">
+                <div class="flex justify-between items-center text-[10px]">
+                  <span class="text-stone-500 font-medium">最終植え替え日:</span>
+                  <span id="carteLastRepotDisplay" class="font-bold text-stone-800">2024-03-15 (1.5年前)</span>
+                </div>
+              </div>
+              <div class="col-span-2">
+                <span class="text-stone-400 block text-[9.5px]">推奨用土の配合比率</span>
+                <p id="carteSoilFormula" class="font-medium text-stone-700 mt-0.5 bg-emerald-50/50 p-1.5 rounded border border-emerald-100 text-[10px]">
+                  赤玉土7 : 桐生砂3（粒度: 中小粒）
+                </p>
+              </div>
+              <div class="col-span-2" id="carteMemoSection">
+                <span class="text-stone-400 block text-[9.5px]">管理メモ</span>
+                <p id="carteMemo" class="text-stone-600 mt-0.5 text-[10px] whitespace-pre-wrap leading-relaxed"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ★ 個別カルテ内へのガントチャート直接埋め込み -->
+        <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5 border-b border-stone-100 pb-1.5">
+            <h3 class="font-mincho font-bold text-xs text-tokiwa flex items-center gap-1.5">
+              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+              <span>この樹種（<span id="carteGanttSpeciesTitle">黒松</span>）の年間栽培スケジュール</span>
+            </h3>
+            <span class="text-[9.5px] text-stone-400">月跨ぎワイドバー仕様</span>
+          </div>
+          <div id="carteEmbeddedGanttContainer" class="overflow-x-auto">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <!-- 成長・手入れタイムライン（写真付きビフォーアフター記録） -->
+        <div class="bg-white p-4 sm:p-5 rounded-xl border border-stone-200 shadow-sm">
+          <div class="flex items-center justify-between mb-3 border-b border-stone-100 pb-2">
+            <div>
+              <h3 class="font-mincho font-bold text-xs sm:text-sm text-tokiwa-dark flex items-center gap-1.5">
+                <i data-lucide="history" class="w-3.5 h-3.5"></i> 手入れ・成長タイムライン
+              </h3>
+              <p class="text-[10px] text-stone-500 mt-0.5">鉢替え、剪定、芽切り、観察記録を写真と共に蓄積できます。</p>
+            </div>
+            <button onclick="openAddTimelineModal(currentCarteBonsaiId)" class="flex items-center gap-1 px-2.5 py-1 bg-tokiwa text-white text-[10px] font-bold rounded-lg hover:bg-tokiwa-light transition shadow-sm">
+              <i data-lucide="plus" class="w-3 h-3"></i>
+              <span>作業・写真を記録</span>
+            </button>
+          </div>
+
+          <!-- タイムラインリスト -->
+          <div id="carteTimelineList" class="space-y-3">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- フッター -->
+      <div class="p-3 px-6 border-t border-stone-200 bg-[#faf8f3] flex justify-end">
+        <button onclick="closeCarteModal()" class="px-4 py-1.5 rounded-lg text-[11px] font-semibold bg-stone-200 text-stone-700 hover:bg-stone-300 transition">
+          閉じる
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: 盆栽 新規登録 / 編集 モーダル -->
+  <!-- ======================================================== -->
+  <div id="bonsaiFormModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-xl bg-washi-card rounded-3xl border border-stone-200 washi-shadow overflow-hidden max-h-[92vh] flex flex-col animate-fade-in">
+      
+      <div class="p-5 border-b border-stone-200 bg-[#faf8f3] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="tree-pine" class="w-5 h-5 text-tokiwa"></i>
+          <h3 id="bonsaiFormTitle" class="font-mincho text-xl font-bold text-tokiwa-dark">愛樹を新しく登録</h3>
+        </div>
+        <button onclick="closeBonsaiFormModal()" class="p-2 text-stone-400 hover:text-stone-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="bonsaiForm" onsubmit="handleBonsaiFormSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <input type="hidden" id="formBonsaiId">
+
+        <!-- 写真アップロード（自動Canvas圧縮） -->
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">愛樹の写真（自動リサイズ圧縮保存）</label>
+          <div class="flex items-center gap-4">
+            <div id="formImagePreviewContainer" class="w-24 h-24 rounded-xl border-2 border-dashed border-stone-300 bg-stone-100 flex items-center justify-center overflow-hidden shrink-0 relative">
+              <img id="formImagePreview" src="" class="hidden w-full h-full object-cover">
+              <span id="formImagePlaceholder" class="text-stone-400 text-center text-[10px] p-2">写真なし</span>
+            </div>
+            <div class="flex-1">
+              <input type="file" id="formImageFile" accept="image/*" onchange="handleImageUpload(event)" class="block w-full text-xs text-stone-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-tokiwa/10 file:text-tokiwa hover:file:bg-tokiwa/20 cursor-pointer">
+              <p class="text-[10px] text-stone-400 mt-1">※スマートフォンやPCの写真を選択すると幅最大900pxに自動圧縮され、ブラウザ容量を保護します。</p>
+            </div>
+          </div>
+          <input type="hidden" id="formImageData">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- 銘・愛称 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">銘（愛称・呼び名） <span class="text-rose-500">*</span></label>
+            <input type="text" id="formName" required placeholder="例: 瑞祥、緑風、モミジ1号" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+
+          <!-- 樹種 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">樹種 <span class="text-rose-500">*</span></label>
+            <select id="formSpeciesId" onchange="handleSpeciesSelectChange()" required class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white font-medium">
+              <!-- 樹種オプション -->
+            </select>
+          </div>
+
+          <!-- 分類 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">分類</label>
+            <select id="formCategory" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+              <option value="conifer">松柏（針葉樹）</option>
+              <option value="deciduous">雑木（落葉・常緑広葉）</option>
+              <option value="flower">花もの</option>
+              <option value="fruit">実もの</option>
+            </select>
+          </div>
+
+          <!-- 樹形 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">樹形（スタイル）</label>
+            <input type="text" id="formStyle" placeholder="例: 模様木、直幹、懸崖、斜幹、箒立ち" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+
+          <!-- 現在の鉢 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">現在の鉢（号数・窯元など）</label>
+            <input type="text" id="formPot" placeholder="例: 常滑焼 長角鉢 4.5号" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+
+          <!-- 入手日 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">入手日</label>
+            <input type="date" id="formAcquiredDate" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+
+          <!-- 入手元 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">入手元（園・イベント・通販）</label>
+            <input type="text" id="formAcquiredFrom" placeholder="例: 盆栽園、春嘉展、知人からの譲渡" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+
+          <!-- 前回の植え替え日 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">前回の植え替え日 <span class="text-amber-700">（植替判定基準）</span></label>
+            <input type="date" id="formLastRepotDate" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+            <span class="text-[10px] text-stone-400">※未入力の場合は入手日が基準になります。</span>
+          </div>
+        </div>
+
+        <!-- 推奨用土メモ -->
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">用土の配合比率メモ</label>
+          <input type="text" id="formSoilFormula" placeholder="例: 赤玉土6 : 桐生砂4" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+        </div>
+
+        <!-- 備考メモ -->
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">備考・由来・愛樹のメモ</label>
+          <textarea id="formMemo" rows="2" placeholder="樹の性格や過去の病気履歴、今後の構想など" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white"></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-stone-200 flex justify-end gap-3">
+          <button type="button" onclick="closeBonsaiFormModal()" class="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition font-semibold">キャンセル</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-tokiwa text-white hover:bg-tokiwa-light transition font-bold shadow-md shadow-tokiwa/20">台帳に追加・保存</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: 手入れ・成長タイムライン追記モーダル -->
+  <!-- ======================================================== -->
+  <div id="timelineFormModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-lg bg-washi-card rounded-3xl border border-stone-200 washi-shadow overflow-hidden max-h-[92vh] flex flex-col animate-fade-in">
+      
+      <div class="p-5 border-b border-stone-200 bg-[#faf8f3] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="edit" class="w-5 h-5 text-tokiwa"></i>
+          <h3 class="font-mincho text-lg font-bold text-tokiwa-dark">手入れ・観察の記録を追加</h3>
+        </div>
+        <button onclick="closeTimelineFormModal()" class="p-2 text-stone-400 hover:text-stone-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="timelineForm" onsubmit="handleTimelineSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <input type="hidden" id="timelineBonsaiId">
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- 作業日 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">実施日 <span class="text-rose-500">*</span></label>
+            <input type="date" id="timelineDate" required class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+
+          <!-- 作業種別 -->
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">作業種別 <span class="text-rose-500">*</span></label>
+            <select id="timelineType" required class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white font-medium">
+              <option value="repot">植え替え（鉢替え・根さばき）</option>
+              <option value="pruning">剪定・切り戻し・枝整理</option>
+              <option value="bud_nipping">芽摘み・芽切り・葉透かし</option>
+              <option value="wiring">針金かけ・整姿</option>
+              <option value="fertilizer">施肥（置き肥・液肥）</option>
+              <option value="pesticide">消毒・病害虫防除</option>
+              <option value="photo">成長記録・観察写真</option>
+              <option value="other">その他のお手入れ</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="timelineRepotNote" class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
+          💡「植え替え」を記録すると、この盆栽の<strong>前回の植え替え日</strong>が本日の日付に自動更新され、アラートがリセットされます。
+        </div>
+
+        <!-- 写真アップロード -->
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">作業写真・ビフォーアフター（任意）</label>
+          <div class="flex items-center gap-3">
+            <div id="timelineImagePreviewContainer" class="w-20 h-20 rounded-xl border border-stone-300 bg-stone-100 flex items-center justify-center overflow-hidden shrink-0 relative">
+              <img id="timelineImagePreview" src="" class="hidden w-full h-full object-cover">
+              <span id="timelineImagePlaceholder" class="text-stone-400 text-[10px]">写真なし</span>
+            </div>
+            <div class="flex-1">
+              <input type="file" id="timelineImageFile" accept="image/*" onchange="handleTimelineImageUpload(event)" class="block w-full text-xs text-stone-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-tokiwa/10 file:text-tokiwa hover:file:bg-tokiwa/20 cursor-pointer">
+              <p class="text-[10px] text-stone-400 mt-1">※自動で幅900pxにリサイズ圧縮されます。</p>
+            </div>
+          </div>
+          <input type="hidden" id="timelineImageData">
+        </div>
+
+        <!-- メモ -->
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">作業内容・根の状態・気づき <span class="text-rose-500">*</span></label>
+          <textarea id="timelineNote" required rows="3" placeholder="例: 鉢底の根を3分の1整理。赤玉7桐生3で植え付け。根張りは非常に良好。" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white"></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-stone-200 flex justify-end gap-3">
+          <button type="button" onclick="closeTimelineFormModal()" class="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition font-semibold">キャンセル</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-tokiwa text-white hover:bg-tokiwa-light transition font-bold shadow-md shadow-tokiwa/20">記録を保存</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: 新規樹種を図鑑に追加 -->
+  <!-- ======================================================== -->
+  <div id="speciesFormModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-xl bg-washi-card rounded-3xl border border-stone-200 washi-shadow overflow-hidden max-h-[92vh] flex flex-col animate-fade-in">
+      
+      <div class="p-5 border-b border-stone-200 bg-[#faf8f3] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="book-plus" class="w-5 h-5 text-tokiwa"></i>
+          <h3 class="font-mincho text-xl font-bold text-tokiwa-dark">新しい樹種を図鑑に登録</h3>
+        </div>
+        <button onclick="closeSpeciesFormModal()" class="p-2 text-stone-400 hover:text-stone-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="speciesForm" onsubmit="handleSpeciesFormSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">樹種名 <span class="text-rose-500">*</span></label>
+            <input type="text" id="spName" required placeholder="例: 杜松（トショウ）" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">分類 <span class="text-rose-500">*</span></label>
+            <select id="spCategory" required class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+              <option value="conifer">松柏（針葉樹）</option>
+              <option value="deciduous">雑木（落葉・常緑広葉）</option>
+              <option value="flower">花もの</option>
+              <option value="fruit">実もの</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">推奨用土の配合</label>
+          <input type="text" id="spSoil" placeholder="例: 赤玉土6 : 桐生砂4" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">特徴・解説 <span class="text-rose-500">*</span></label>
+          <textarea id="spDesc" required rows="2" placeholder="樹の特徴や性質、鑑賞のポイント" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">四季の見どころ</label>
+          <input type="text" id="spHighlights" placeholder="春の新芽、初夏の花、錦秋の紅葉など" class="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-tokiwa focus:outline-none bg-white">
+        </div>
+
+        <div class="p-3 bg-stone-50 rounded-xl border border-stone-200">
+          <span class="font-bold text-stone-700 block mb-1">適期スケジュール設定（開始月〜終了月）</span>
+          <div class="grid grid-cols-2 gap-3 text-[11px]">
+            <div>
+              <span class="text-stone-500">植え替え適期:</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <input type="number" id="spRepotStart" min="1" max="12" value="3" class="w-12 px-1.5 py-1 rounded border border-stone-300 text-center">月 〜
+                <input type="number" id="spRepotEnd" min="1" max="12" value="4" class="w-12 px-1.5 py-1 rounded border border-stone-300 text-center">月
+              </div>
+            </div>
+            <div>
+              <span class="text-stone-500">剪定適期:</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <input type="number" id="spPruneStart" min="1" max="12" value="5" class="w-12 px-1.5 py-1 rounded border border-stone-300 text-center">月 〜
+                <input type="number" id="spPruneEnd" min="1" max="12" value="6" class="w-12 px-1.5 py-1 rounded border border-stone-300 text-center">月
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-stone-200 flex justify-end gap-3">
+          <button type="button" onclick="closeSpeciesFormModal()" class="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition font-semibold">キャンセル</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-tokiwa text-white hover:bg-tokiwa-light transition font-bold shadow-md shadow-tokiwa/20">図鑑に登録</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- 確認ダイアログモーダル（alert/confirm代替） -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-sm bg-white rounded-3xl border border-stone-200 washi-shadow p-6 text-center animate-fade-in">
+      <div id="confirmIconBox" class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 id="confirmTitle" class="font-mincho text-lg font-bold text-stone-800">削除の確認</h3>
+      <p id="confirmMessage" class="text-xs text-stone-500 mt-2 leading-relaxed">この盆栽を台帳から削除してもよろしいですか？この操作は取り消せません。</p>
+      <div class="mt-6 flex justify-center gap-3">
+        <button id="confirmCancelBtn" class="px-4 py-2 rounded-xl bg-stone-100 text-stone-700 text-xs font-semibold hover:bg-stone-200 transition">キャンセル</button>
+        <button id="confirmOkBtn" class="px-5 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition shadow-md shadow-rose-600/20">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トーストメッセージ通知 -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-16 opacity-0 transition-all duration-300 flex items-center gap-2 px-4 py-3 rounded-2xl bg-stone-900/90 text-white text-xs font-medium shadow-2xl backdrop-blur-md pointer-events-none">
+    <i id="toastIcon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">処理が完了しました</span>
+  </div>
+
+  <script>
+    /* ========================================================
+     * 盆栽手帖 JavaScript コアロジック
+     * ======================================================== */
+
+    // 季節のアドバイス定義（1〜12月）
+    const MONTHLY_GUIDE = {
+      1: { season: "【寒風対策・冬の保護】", text: "寒風や凍結・霜柱から根を守る時期です。水やりは2〜3日に1回、よく晴れた暖かい午前中に行います。針金かけによる骨格づくりや石灰硫黄合剤による消毒の好期です。" },
+      2: { season: "【春の息吹・早春の準備】", text: "梅やボケなど早春の花がほころび始めます。寒樹の姿を楽しみつつ、春の植え替えに必要な用土（赤玉・桐生砂）や鉢の準備、用土ふるいを済ませておきましょう。" },
+      3: { season: "【春の彼岸・植え替え最盛期】", text: "植物が活動を再開する植え替えのゴールデンタイムです。芽がほころぶ直前の適期を逃さず、鉢から抜いて古根をさばき、新鮮な用土へ更新しましょう。" },
+      4: { season: "【新緑の伸長・芽摘み開始】", text: "新芽が一斉に展開します。水切れに注意し、水やりは1日1回朝たっぷりと。雑木は勢いのある新芽を2節で摘み、春肥（油かす等）を置き始めましょう。" },
+      5: { season: "【充実期・初夏の花と葉刈り】", text: "サツキの花が咲き誇る季節です。モミジやケヤキは新梢が固まったら芽摘みや葉刈りを行い、小枝を密に分岐させます。乾きやすいため朝夕の点検を。" },
+      6: { season: "【入梅・黒松の芽切り適期】", text: "黒松・赤松の最大の急所「芽切り」の適期（6月下旬〜7月上旬）です。今年伸びた新芽の元から切り落とし、秋までに短い二番芽を揃えます。サツキは花後すぐに剪定します。" },
+      7: { season: "【盛夏・遮光と水管理】", text: "強い日差しと高温から鉢を守るため、寒冷紗による50%遮光や西日除けを設置します。水やりは朝夕の涼しい時間帯にたっぷりと施し、葉水も効果的です。" },
+      8: { season: "【猛暑のりきり・夕打ち水】", text: "水切れは一鉢の命取りになります。乾きやすい小鉢は二重鉢や腰水（浅め）を検討。肥料は根腐れを防ぐため完全にストップし、静かに酷暑を乗り切らせます。" },
+      9: { season: "【秋の彼岸・秋肥と根の充実】", text: "朝夕の涼しさと共に植物が再び成長します。実ものや紅葉の美しさを増すために秋肥を与え、秋の植え替え（松柏類など）を彼岸前後に実施しましょう。" },
+      10: { season: "【錦秋・実の色づきと整姿】", text: "実もの（老爺柿、姫リンゴなど）が鮮やかに色づきます。日当たりの良い場所でしっかり陽に当て、枝が固まる秋の針金かけで美しい樹形を整えます。" },
+      11: { season: "【落葉・寒樹の美と冬支度】", text: "モミジやカエデの紅葉を楽しんだ後、葉が落ちたら冬剪定を行います。不要な立ち枝や交差枝を払い、繊細な箒立ちの枝先を整えましょう。施肥は終了します。" },
+      12: { season: "【休眠期・ムロ入れと古葉取り】", text: "黒松の古葉透かしを行い、懐まで陽と風を通します。寒さに弱い樹種（杜松、真柏、花もの）は軒下やムロ、霜よけのできる日だまりに保護して越冬させます。" }
+    };
+
+    // 初期サンプル樹種データ（ガントチャート用手入れ適期定義付き）
+    const DEFAULT_SPECIES = [
+      {
+        id: "kuromatsu",
+        name: "黒松（クロマツ）",
+        category: "conifer",
+        soilFormula: "赤玉土6 : 桐生砂4（または赤玉5 : 桐生3 : 富士砂2）",
+        description: "「盆栽の王」と称される剛健種。ゴツゴツと荒れる樹皮と力強い針葉が魅力。潮風や乾燥に強く極めて長寿です。",
+        highlights: "6〜7月の新緑芽切り、秋〜冬の古葉取りと引き締まった骨格。",
+        schedule: [
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: 3, end: 4, text: "3〜4月: 春の植替適期（3〜4年に1回）" }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: 1, end: 2, text: "1〜2月: 冬の不要枝整理" }, { start: 11, end: 12, text: "11〜12月: 整姿剪定" }] },
+          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 6, end: 7, text: "6月下旬〜7月上旬: 二番芽出しの「芽切り」" }, { start: 11, end: 12, text: "11〜12月: 古葉落とし・葉透かし" }] },
+          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 1, end: 2, text: "1〜2月: 休眠期の整姿" }, { start: 11, end: 12, text: "11〜12月: 本格針金かけ" }] },
+          { task: "施肥（肥料）", color: "amber", periods: [{ start: 3, end: 5, text: "3〜5月: 春肥（油かす）" }, { start: 9, end: 11, text: "9〜11月: 秋肥（芽切り後は控える）" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [
+            { start: 1, end: 2, text: "1〜2日に1回（午前中）" },
+            { start: 3, end: 5, text: "1日1回（朝）" },
+            { start: 6, end: 8, text: "1日2〜3回（朝夕たっぷり）" },
+            { start: 9, end: 10, text: "1日1回（朝）" },
+            { start: 11, end: 12, text: "1〜2日に1回" }
+          ]},
+          { task: "置き場所・日照・保護", color: "stone", periods: [
+            { start: 1, end: 2, text: "日だまり・寒風除け" },
+            { start: 3, end: 6, text: "日当たり・風通しの良い棚場" },
+            { start: 7, end: 8, text: "終日直射日光（乾きに注意）" },
+            { start: 9, end: 11, text: "十分に陽に当てる" },
+            { start: 12, end: 12, text: "霜柱・寒風除け" }
+          ]}
+        ]
+      },
+      {
+        id: "shimpaku",
+        name: "真柏（シンパク）",
+        category: "conifer",
+        soilFormula: "赤玉土6 : 桐生砂4",
+        description: "白く枯淡な「舎利（シャリ）」や「神（ジン）」と、生命感あふれる赤褐色の水吸いとのコントラストが真骨頂。",
+        highlights: "一年中鑑賞できる深い緑の葉と、彫刻的な幹肌の造形美。",
+        schedule: [
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: 3, end: 4, text: "3〜4月: 春の適期" }, { start: 9, end: 9, text: "9月: 秋の彼岸" }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: 5, end: 9, text: "5〜9月: 輪郭をはみ出た杉葉の剪定" }] },
+          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 5, end: 8, text: "5〜8月: 指先で新芽をつまみ取る（ハサミ厳禁）" }] },
+          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 1, end: 3, text: "1〜3月: 厳冬期の曲づけ" }, { start: 10, end: 12, text: "10〜12月: 舎利磨き＆整姿" }] },
+          { task: "施肥（肥料）", color: "amber", periods: [{ start: 4, end: 6, text: "4〜6月: 春肥" }, { start: 9, end: 10, text: "9〜10月: 秋肥" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [
+            { start: 1, end: 2, text: "2日に1回" },
+            { start: 3, end: 5, text: "1日1回（葉水も好む）" },
+            { start: 6, end: 8, text: "1日2回＋夕方葉水" },
+            { start: 9, end: 10, text: "1日1回" },
+            { start: 11, end: 12, text: "2日に1回" }
+          ]},
+          { task: "置き場所・日照・保護", color: "stone", periods: [
+            { start: 1, end: 2, text: "冬期保護（ムロ・軒下）" },
+            { start: 3, end: 6, text: "直射日光の当たる棚上" },
+            { start: 7, end: 8, text: "風通しの良い日向" },
+            { start: 9, end: 11, text: "日当たり良好な棚場" },
+            { start: 12, end: 12, text: "寒風・霜よけ" }
+          ]}
+        ]
+      },
+      {
+        id: "momiji",
+        name: "山モミジ（ヤマモミジ）",
+        category: "deciduous",
+        soilFormula: "赤玉土8 : 桐生砂2（保水性を重視）",
+        description: "春の新緑、夏の涼やかな緑陰、秋の錦秋の紅葉、冬の寒樹（箒立ちの細やかな小枝）と、四季の移ろいを最も体現する雑木盆栽。",
+        highlights: "4月の清々しい芽吹き、11月の紅葉、冬の繊細な小枝。",
+        schedule: [
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: 2, end: 3, text: "2月下旬〜3月: 芽出し直前の最盛期" }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: 5, end: 6, text: "5〜6月: 伸びた新梢の切り戻し" }, { start: 11, end: 12, text: "11〜12月: 落葉後の基本冬剪定" }] },
+          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 4, end: 5, text: "4〜5月: 芽出し直後の芯摘み" }, { start: 5, end: 6, text: "5月下旬〜6月: 葉刈り（小葉化）" }] },
+          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 5, end: 6, text: "5〜6月: 新梢が固まりかけの柔らかい時期" }, { start: 11, end: 11, text: "11月: 落葉直後の整姿" }] },
+          { task: "施肥（肥料）", color: "amber", periods: [{ start: 4, end: 5, text: "4〜5月: 控えめの春肥" }, { start: 9, end: 10, text: "9〜10月: 窒素分控えめの秋肥" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [
+            { start: 1, end: 2, text: "2〜3日に1回" },
+            { start: 3, end: 5, text: "1日1回" },
+            { start: 6, end: 8, text: "1日2回（水切れ厳禁）" },
+            { start: 9, end: 10, text: "1日1回" },
+            { start: 11, end: 12, text: "2日に1回" }
+          ]},
+          { task: "置き場所・日照・保護", color: "stone", periods: [
+            { start: 1, end: 2, text: "寒風の当たらない軒下" },
+            { start: 3, end: 5, text: "日当たりと風通しの良い場所" },
+            { start: 6, end: 8, text: "半日陰・寒冷紗50%遮光（葉焼け防止）" },
+            { start: 9, end: 10, text: "日光に当てて紅葉を促す" },
+            { start: 11, end: 12, text: "落葉後は霜よけ保護" }
+          ]}
+        ]
+      },
+      {
+        id: "satsuki",
+        name: "サツキ（皐月）",
+        category: "flower",
+        soilFormula: "鹿沼土100%（または鹿沼土9 : 桐生砂1）※酸性土壌必須",
+        description: "5月〜6月に絢爛豪華な花を咲かせる花もの盆栽の筆頭。咲き分けや絞りなど多彩な花芸と、小葉の密な枝打ちが魅力です。",
+        highlights: "5月下旬〜6月上旬の花の競演。剪定後の端正な樹姿。",
+        schedule: [
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: 5, end: 6, text: "5月下旬〜6月: 花後すぐの植え替え（2年に1回）" }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: 6, end: 6, text: "6月: 花後すぐに花殻摘み＆強剪定" }] },
+          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 7, end: 8, text: "7〜8月: 伸びすぎた新梢の元摘み" }] },
+          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 6, end: 7, text: "6〜7月: 花後剪定と同時に実施" }] },
+          { task: "施肥（肥料）", color: "amber", periods: [{ start: 3, end: 4, text: "3〜4月: 花前肥" }, { start: 6, end: 7, text: "6〜7月: お礼肥" }, { start: 9, end: 10, text: "9〜10月: 秋肥" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [
+            { start: 1, end: 2, text: "2日に1回" },
+            { start: 3, end: 5, text: "1日1回（開花中は花に水をかけない）" },
+            { start: 6, end: 8, text: "1日2回" },
+            { start: 9, end: 10, text: "1日1回" },
+            { start: 11, end: 12, text: "2日に1回" }
+          ]},
+          { task: "置き場所・日照・保護", color: "stone", periods: [
+            { start: 1, end: 2, text: "冬期は日陰のムロ入れ（寒さにやや弱い）" },
+            { start: 3, end: 5, text: "日当たり・風通しの良い棚場" },
+            { start: 6, end: 8, text: "開花中および夏は半日陰" },
+            { start: 9, end: 11, text: "日当たりの良い棚上" },
+            { start: 12, end: 12, text: "凍結防止・軒下保護" }
+          ]}
+        ]
+      },
+      {
+        id: "chojubai",
+        name: "長寿梅（チョウジュバイ）",
+        category: "flower",
+        soilFormula: "赤玉土7 : 桐生砂3",
+        description: "草ボケの変種で、「長寿」を祝う縁起樹。野趣あふれる古木感と、四季を通じて咲く小ぶりな紅花・白花が愛されています。",
+        highlights: "早春と秋の可憐な朱花、小枝が細かく密生する雅味。",
+        schedule: [
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: 9, end: 10, text: "9月下旬〜10月: 秋が最適（根頭癌腫病防止）" }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: 5, end: 6, text: "5〜6月: 新梢の切り戻し" }, { start: 9, end: 10, text: "9〜10月: 樹形を乱す徒長枝の整理" }] },
+          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 4, end: 8, text: "4〜8月: 勢いの強い徒長枝を小まめに剪除" }] },
+          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 6, end: 6, text: "6月: 枝が柔らかい時期に軽く曲付け" }] },
+          { task: "施肥（肥料）", color: "amber", periods: [{ start: 4, end: 6, text: "4〜6月: 薄い液肥または置き肥" }, { start: 9, end: 11, text: "9〜11月: 秋肥" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [
+            { start: 1, end: 2, text: "2日に1回" },
+            { start: 3, end: 5, text: "1日1回" },
+            { start: 6, end: 8, text: "1日2回（乾きにやや弱い）" },
+            { start: 9, end: 10, text: "1日1回" },
+            { start: 11, end: 12, text: "2日に1回" }
+          ]},
+          { task: "置き場所・日照・保護", color: "stone", periods: [
+            { start: 1, end: 2, text: "霜よけ・日当たりの良い軒下" },
+            { start: 3, end: 6, text: "終日よく陽に当てる" },
+            { start: 7, end: 8, text: "半日陰で西日を遮光" },
+            { start: 9, end: 11, text: "日当たりの良い棚上" },
+            { start: 12, end: 12, text: "霜柱防止の保護" }
+          ]}
+        ]
+      }
+    ];
+
+    // 外部通信なしで美しく自立表示される盆栽アートSVG（Base64/DataURI）
+    const SVG_ART = {
+      kuromatsu: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23f5f2eb"/><stop offset="100%" stop-color="%23e8e2d4"/></linearGradient><linearGradient id="trunk" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%233e2723"/><stop offset="100%" stop-color="%23271710"/></linearGradient></defs><rect width="400" height="300" fill="url(%23bg)"/><ellipse cx="200" cy="265" rx="140" ry="8" fill="%23d0c8b6"/><rect x="110" y="240" width="180" height="24" rx="4" fill="%234e342e"/><polygon points="120,264 130,270 270,270 280,264" fill="%233e2723"/><ellipse cx="200" cy="242" rx="88" ry="6" fill="%232c1e18"/><path d="M195,242 C185,210 160,180 175,140 C185,115 170,90 190,65 C195,60 205,62 200,75 C185,100 205,120 195,150 C185,185 210,210 205,242 Z" fill="url(%23trunk)"/><path d="M175,150 C140,145 110,160 85,165" stroke="%233e2723" stroke-width="10" stroke-linecap="round" fill="none"/><path d="M185,120 C220,115 250,125 285,130" stroke="%233e2723" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M185,85 C160,80 135,90 115,95" stroke="%233e2723" stroke-width="6" stroke-linecap="round" fill="none"/><ellipse cx="85" cy="162" rx="35" ry="18" fill="%231b4332"/><ellipse cx="80" cy="158" rx="25" ry="14" fill="%232d6a4f"/><ellipse cx="285" cy="128" rx="40" ry="20" fill="%231b4332"/><ellipse cx="280" cy="124" rx="30" ry="15" fill="%232d6a4f"/><ellipse cx="115" cy="92" rx="30" ry="16" fill="%231b4332"/><ellipse cx="190" cy="60" rx="45" ry="22" fill="%231b4332"/><ellipse cx="190" cy="55" rx="35" ry="16" fill="%232d6a4f"/><ellipse cx="230" cy="85" rx="28" ry="15" fill="%231b4332"/></svg>`,
+      momiji: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300"><defs><linearGradient id="bgm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23fdfaf4"/><stop offset="100%" stop-color="%23ebe3d4"/></linearGradient></defs><rect width="400" height="300" fill="url(%23bgm)"/><ellipse cx="200" cy="265" rx="130" ry="7" fill="%23d6cdbc"/><rect x="120" y="242" width="160" height="20" rx="3" fill="%2337474f"/><ellipse cx="200" cy="243" rx="78" ry="5" fill="%23263238"/><path d="M198,243 C196,210 192,175 195,145 C198,125 190,110 196,80" stroke="%235d4037" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M195,160 C165,140 140,130 110,135" stroke="%235d4037" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M196,145 C225,130 250,120 280,125" stroke="%235d4037" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M195,120 C175,100 150,95 130,90" stroke="%235d4037" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M196,105 C215,90 235,85 260,80" stroke="%235d4037" stroke-width="4" stroke-linecap="round" fill="none"/><ellipse cx="105" cy="130" rx="35" ry="22" fill="%23c85a32" opacity="0.9"/><ellipse cx="100" cy="125" rx="25" ry="16" fill="%23e76f51"/><ellipse cx="280" cy="120" rx="38" ry="24" fill="%23c85a32" opacity="0.9"/><ellipse cx="275" cy="115" rx="28" ry="17" fill="%23e76f51"/><ellipse cx="130" cy="85" rx="32" ry="20" fill="%23d97706"/><ellipse cx="260" cy="75" rx="30" ry="18" fill="%23d97706"/><ellipse cx="196" cy="65" rx="48" ry="28" fill="%23b9382b"/><ellipse cx="195" cy="60" rx="36" ry="20" fill="%23e76f51"/></svg>`,
+      shimpaku: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300"><defs><linearGradient id="bgs" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23f7f5ed"/><stop offset="100%" stop-color="%23e6decb"/></linearGradient></defs><rect width="400" height="300" fill="url(%23bgs)"/><ellipse cx="200" cy="265" rx="120" ry="7" fill="%23d3cab7"/><rect x="130" y="235" width="140" height="28" rx="4" fill="%235d4037"/><ellipse cx="200" cy="237" rx="68" ry="6" fill="%233e2723"/><path d="M190,237 C180,200 150,175 140,140 C130,105 160,85 190,75 C230,60 270,75 290,110 C310,145 290,195 240,210" stroke="%23eee9da" stroke-width="14" stroke-linecap="round" fill="none"/><path d="M192,237 C182,200 154,175 144,140 C134,105 164,85 192,75 C232,60 272,75 292,110 C312,145 292,195 242,210" stroke="%234a2e1b" stroke-width="6" stroke-linecap="round" fill="none"/><ellipse cx="130" cy="135" rx="30" ry="16" fill="%232d6a4f"/><ellipse cx="190" cy="70" rx="40" ry="20" fill="%232d6a4f"/><ellipse cx="290" cy="105" rx="35" ry="18" fill="%232d6a4f"/><ellipse cx="240" cy="205" rx="32" ry="16" fill="%231b4332"/><ellipse cx="235" cy="200" rx="24" ry="12" fill="%2340916c"/></svg>`
+    };
+
+    // 初期サンプル盆栽データ
+    const DEFAULT_BONSAI = [
+      {
+        id: "b-01",
+        name: "瑞祥（ずいしょう）",
+        speciesId: "kuromatsu",
+        speciesName: "黒松（クロマツ）",
+        category: "conifer",
+        style: "模様木",
+        pot: "萬古焼 楕円鉢 5号",
+        acquiredDate: "2021-04-10",
+        acquiredFrom: "上野グリーンクラブ春興展",
+        lastRepotDate: "2024-03-20", // 現在2026年9月時点で約2.5年経過 → 植替検討期アラート対象！
+        soilFormula: "赤玉土6 : 桐生砂4（中粒）",
+        memo: "我が家の主木。立ち上がりの幹肌に深い亀甲状の荒れが見られる。芽切り後の二番芽管理が肝要。",
+        imageUrl: SVG_ART.kuromatsu,
+        timeline: [
+          {
+            id: "tl-01-1",
+            date: "2024-03-20",
+            type: "repot",
+            note: "春の植え替え実施。根鉢を3割ほど崩し、傷んだ黒根を整理。赤玉6桐生4で植え付け。",
+            imageUrl: SVG_ART.kuromatsu
+          },
+          {
+            id: "tl-01-2",
+            date: "2025-06-28",
+            type: "bud_nipping",
+            note: "今年の芽切り作業。強勢な上部は浅めに、弱勢な下部は深めに切って樹勢を均一化。",
+            imageUrl: null
+          },
+          {
+            id: "tl-01-3",
+            date: "2025-11-20",
+            type: "wiring",
+            note: "古葉落としを実施し、下垂していた二番枝に銅線を効かせて水平に整姿。",
+            imageUrl: null
+          }
+        ]
+      },
+      {
+        id: "b-02",
+        name: "深山（みやま）",
+        speciesId: "momiji",
+        speciesName: "山モミジ（ヤマモミジ）",
+        category: "deciduous",
+        style: "箒立ち（ほうきだち）",
+        pot: "瀬戸焼 白釉丸鉢 4号",
+        acquiredDate: "2022-03-15",
+        acquiredFrom: "近郊盆栽園の実生苗より育成",
+        lastRepotDate: "2025-03-05", // 1.5年前 → 良好
+        soilFormula: "赤玉土8 : 桐生砂2",
+        memo: "繊細な箒立ちの小枝を目指して毎年5月に葉刈りと芽摘みを徹底。秋の透き通るような紅葉が絶品。",
+        imageUrl: SVG_ART.momiji,
+        timeline: [
+          {
+            id: "tl-02-1",
+            date: "2025-03-05",
+            type: "repot",
+            note: "芽出し前の植え替え。底根を薄くさばき、白釉鉢へ収める。水はけ良好。",
+            imageUrl: SVG_ART.momiji
+          },
+          {
+            id: "tl-02-2",
+            date: "2025-05-25",
+            type: "bud_nipping",
+            note: "初夏の全葉刈り。2節で切り戻し、細かい小枝の分岐を促す。",
+            imageUrl: null
+          }
+        ]
+      },
+      {
+        id: "b-03",
+        name: "雲龍（うんりゅう）",
+        speciesId: "shimpaku",
+        speciesName: "真柏（シンパク）",
+        category: "conifer",
+        style: "懸崖（けんがい）",
+        pot: "常滑焼 泥六角深鉢 4.5号",
+        acquiredDate: "2020-10-01",
+        acquiredFrom: "愛好家交換会にて入手",
+        lastRepotDate: "2023-04-12", // 3年以上経過 → 植替検討期アラート対象！
+        soilFormula: "赤玉土6 : 桐生砂4",
+        memo: "天然の舎利（シャリ）が幹を巻き込むように走る。水吸いの赤みを保つため年1回石灰硫黄合剤で舎利を白骨化処理。",
+        imageUrl: SVG_ART.shimpaku,
+        timeline: [
+          {
+            id: "tl-03-1",
+            date: "2023-04-12",
+            type: "repot",
+            note: "前回の鉢替え。深鉢のため底に大粒のゴロ土を多めに配置。",
+            imageUrl: SVG_ART.shimpaku
+          },
+          {
+            id: "tl-03-2",
+            date: "2024-11-15",
+            type: "wiring",
+            note: "舎利の清掃（水洗い後、石灰硫黄合剤の希釈塗布）。アルミ線で頭部の葉塊を整枝。",
+            imageUrl: null
+          }
+        ]
+      }
+    ];
+
+    let currentTab = 'inventory';
+    let currentCategoryFilter = 'all';
+    let filterRepotOnly = false; // 植替検討期のみ絞り込みフラグ
+    let currentCarteBonsaiId = null;
+
+    // ローカルストレージキー
+    const LS_KEY_BONSAI = 'bonsai_techo_bonsai_list';
+    const LS_KEY_SPECIES = 'bonsai_techo_species_list';
+
+    // データの取得と初期化（空の場合や破損時に確実にサンプルを投入）
+    function loadBonsaiList() {
+      const data = localStorage.getItem(LS_KEY_BONSAI);
+      if (!data) {
+        localStorage.setItem(LS_KEY_BONSAI, JSON.stringify(DEFAULT_BONSAI));
+        return JSON.parse(JSON.stringify(DEFAULT_BONSAI));
+      }
+      try {
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          localStorage.setItem(LS_KEY_BONSAI, JSON.stringify(DEFAULT_BONSAI));
+          return JSON.parse(JSON.stringify(DEFAULT_BONSAI));
+        }
+        return parsed;
+      } catch (e) {
+        localStorage.setItem(LS_KEY_BONSAI, JSON.stringify(DEFAULT_BONSAI));
+        return JSON.parse(JSON.stringify(DEFAULT_BONSAI));
+      }
+    }
+
+    function saveBonsaiList(list) {
+      localStorage.setItem(LS_KEY_BONSAI, JSON.stringify(list));
+      updateSummaryStats();
+    }
+
+    function loadSpeciesList() {
+      const data = localStorage.getItem(LS_KEY_SPECIES);
+      if (!data) {
+        localStorage.setItem(LS_KEY_SPECIES, JSON.stringify(DEFAULT_SPECIES));
+        return JSON.parse(JSON.stringify(DEFAULT_SPECIES));
+      }
+      try {
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          localStorage.setItem(LS_KEY_SPECIES, JSON.stringify(DEFAULT_SPECIES));
+          return JSON.parse(JSON.stringify(DEFAULT_SPECIES));
+        }
+        return parsed;
+      } catch (e) {
+        localStorage.setItem(LS_KEY_SPECIES, JSON.stringify(DEFAULT_SPECIES));
+        return JSON.parse(JSON.stringify(DEFAULT_SPECIES));
+      }
+    }
+
+    function saveSpeciesList(list) {
+      localStorage.setItem(LS_KEY_SPECIES, JSON.stringify(list));
+    }
+
+    // 植え替えからの経過年数計算ロジック（現在日付との差分年数）
+    function calculateRepotYears(lastRepotDateStr, acquiredDateStr) {
+      const targetDateStr = lastRepotDateStr || acquiredDateStr;
+      if (!targetDateStr) return { years: 0, text: "未記録", isAlert: false };
+
+      const past = new Date(targetDateStr);
+      const now = new Date();
+      if (isNaN(past.getTime())) return { years: 0, text: "日付不正", isAlert: false };
+
+      const diffMs = now.getTime() - past.getTime();
+      const years = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+      const formattedYears = years < 0 ? 0 : Math.round(years * 10) / 10;
+      const isAlert = formattedYears >= 2.0;
+
+      let text = "";
+      if (formattedYears < 1.0) {
+        const months = Math.max(1, Math.round(years * 12));
+        text = `${months}ヶ月前`;
+      } else {
+        text = `${formattedYears}年前`;
+      }
+
+      return {
+        years: formattedYears,
+        text: text,
+        isAlert: isAlert,
+        targetDate: targetDateStr
+      };
+    }
+
+    // 分類ラベル＆バッジカラー
+    function getCategoryBadge(category) {
+      switch (category) {
+        case 'conifer':
+          return { label: '松柏', class: 'bg-emerald-100 text-emerald-900 border-emerald-300' };
+        case 'deciduous':
+          return { label: '雑木', class: 'bg-amber-100 text-amber-900 border-amber-300' };
+        case 'flower':
+          return { label: '花もの', class: 'bg-rose-100 text-rose-900 border-rose-300' };
+        case 'fruit':
+          return { label: '実もの', class: 'bg-purple-100 text-purple-900 border-purple-300' };
+        default:
+          return { label: '盆栽', class: 'bg-stone-100 text-stone-800 border-stone-300' };
+      }
+    }
+
+    // 作業種別の和名とバッジカラー
+    function getTimelineTypeBadge(type) {
+      switch (type) {
+        case 'repot':
+          return { label: '植え替え', class: 'bg-amber-100 text-amber-900 border-amber-300', icon: 'refresh-cw' };
+        case 'pruning':
+          return { label: '剪定・枝整理', class: 'bg-emerald-100 text-emerald-900 border-emerald-300', icon: 'scissors' };
+        case 'bud_nipping':
+          return { label: '芽摘み・芽切り', class: 'bg-teal-100 text-teal-900 border-teal-300', icon: 'sparkles' };
+        case 'wiring':
+          return { label: '針金かけ・整姿', class: 'bg-indigo-100 text-indigo-900 border-indigo-300', icon: 'git-commit' };
+        case 'fertilizer':
+          return { label: '施肥', class: 'bg-yellow-100 text-yellow-900 border-yellow-300', icon: 'cookie' };
+        case 'pesticide':
+          return { label: '病害虫防除', class: 'bg-rose-100 text-rose-900 border-rose-300', icon: 'shield-alert' };
+        case 'photo':
+          return { label: '観察記録', class: 'bg-sky-100 text-sky-900 border-sky-300', icon: 'camera' };
+        default:
+          return { label: '手入れ', class: 'bg-stone-100 text-stone-800 border-stone-300', icon: 'wrench' };
+      }
+    }
+
+    // サマリーバナー・バッジの更新
+    function updateSummaryStats() {
+      const bonsaiList = loadBonsaiList();
+      let alertCount = 0;
+
+      bonsaiList.forEach(b => {
+        const info = calculateRepotYears(b.lastRepotDate, b.acquiredDate);
+        if (info.isAlert) alertCount++;
+      });
+
+      document.getElementById('statTotalBonsai').textContent = `${bonsaiList.length}鉢`;
+      document.getElementById('statRepotNeeded').textContent = `${alertCount}鉢`;
+      document.getElementById('tabCountBadge').textContent = bonsaiList.length;
+
+      const headerAlertBtn = document.getElementById('headerAlertBtn');
+      const headerAlertCount = document.getElementById('headerAlertCount');
+      if (alertCount > 0) {
+        headerAlertBtn.classList.remove('hidden');
+        headerAlertBtn.classList.add('flex');
+        headerAlertCount.textContent = `${alertCount}鉢`;
+      } else {
+        headerAlertBtn.classList.add('hidden');
+        headerAlertBtn.classList.remove('flex');
+      }
+
+      // 今月の管理急所テキストの動的更新
+      const nowMonth = new Date().getMonth() + 1;
+      const guide = MONTHLY_GUIDE[nowMonth];
+      if (guide) {
+        document.getElementById('currentMonthBadge').textContent = `${nowMonth}月の管理急所`;
+        document.getElementById('currentSeasonName').textContent = guide.season;
+        document.getElementById('currentSeasonalAdvice').textContent = guide.text;
+      }
+    }
+
+    // アイコンの安全な生成
+    function safeCreateIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
+
+    // 愛樹台帳（一覧）のレンダリング
+    function renderBonsaiList() {
+      const list = loadBonsaiList();
+      const grid = document.getElementById('bonsaiGrid');
+      const emptyState = document.getElementById('emptyBonsaiState');
+      if (!grid) return;
+
+      const searchInputEl = document.getElementById('searchInput');
+      const searchKeyword = (searchInputEl ? searchInputEl.value : '').trim().toLowerCase();
+      const sortSelectEl = document.getElementById('sortSelect');
+      const sortType = sortSelectEl ? sortSelectEl.value : 'repotDesc';
+
+      // 絞り込みフィルター
+      let filtered = list.filter(b => {
+        if (currentCategoryFilter !== 'all' && b.category !== currentCategoryFilter) return false;
+        if (filterRepotOnly) {
+          const info = calculateRepotYears(b.lastRepotDate, b.acquiredDate);
+          if (!info.isAlert) return false;
+        }
+        if (searchKeyword) {
+          const matchName = (b.name || '').toLowerCase().includes(searchKeyword);
+          const matchSpecies = (b.speciesName || '').toLowerCase().includes(searchKeyword);
+          const matchStyle = (b.style || '').toLowerCase().includes(searchKeyword);
+          if (!matchName && !matchSpecies && !matchStyle) return false;
+        }
+        return true;
+      });
+
+      filtered.sort((a, b) => {
+        if (sortType === 'repotDesc') {
+          const ya = calculateRepotYears(a.lastRepotDate, a.acquiredDate).years;
+          const yb = calculateRepotYears(b.lastRepotDate, b.acquiredDate).years;
+          return yb - ya;
+        } else if (sortType === 'acquiredDesc') {
+          return new Date(b.acquiredDate || 0) - new Date(a.acquiredDate || 0);
+        } else if (sortType === 'acquiredAsc') {
+          return new Date(a.acquiredDate || 0) - new Date(b.acquiredDate || 0);
+        } else if (sortType === 'nameAsc') {
+          return (a.name || '').localeCompare(b.name || '', 'ja');
+        }
+        return 0;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+      }
+      if (emptyState) emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(b => {
+        const cat = getCategoryBadge(b.category);
+        const repot = calculateRepotYears(b.lastRepotDate, b.acquiredDate);
+        const img = b.imageUrl || SVG_ART[b.speciesId] || SVG_ART.kuromatsu;
+
+        return `
+          <div onclick="openCarteModal('${b.id}')" class="group bg-washi-card rounded-xl border border-[#e2ddd0] washi-shadow washi-shadow-hover transition duration-200 overflow-hidden cursor-pointer flex flex-col">
+            <!-- 写真コンテナ -->
+            <div class="aspect-[4/3] w-full bg-stone-100 overflow-hidden relative border-b border-stone-200">
+              <img src="${img}" alt="${b.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+              <div class="absolute top-2 left-2 flex gap-1 flex-wrap">
+                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full border shadow-sm ${cat.class}">
+                  ${cat.label}
+                </span>
+                ${b.style ? `<span class="text-[9px] font-medium px-1.5 py-0.2 rounded-full bg-white/90 backdrop-blur-sm text-stone-700 border border-stone-300/80 shadow-sm">${b.style}</span>` : ''}
+              </div>
+              ${repot.isAlert ? `
+                <div class="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500 text-white text-[9.5px] font-bold shadow-md animate-pulse">
+                  <i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i>
+                  <span>植替検討期 (${repot.text})</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- カード本文 -->
+            <div class="p-3 sm:p-3.5 flex-1 flex flex-col justify-between">
+              <div>
+                <div class="flex items-baseline justify-between gap-1.5">
+                  <h3 class="font-mincho text-sm sm:text-base font-bold text-tokiwa-dark group-hover:text-tokiwa-light transition">
+                    ${b.name}
+                  </h3>
+                  <span class="text-[9.5px] text-stone-500 font-medium">${b.speciesName}</span>
+                </div>
+
+                <!-- 鉢と入手情報 -->
+                <p class="text-[10px] text-stone-500 mt-1 flex items-center gap-1">
+                  <i data-lucide="flower2" class="w-3 h-3 text-stone-400"></i>
+                  <span>${b.pot || '鉢未登録'}</span>
+                </p>
+              </div>
+
+              <!-- 植え替え経過ステータス -->
+              <div class="mt-2.5 pt-1.5 border-t border-stone-200 flex items-center justify-between text-[11px]">
+                <div>
+                  <span class="text-[8.5px] text-stone-400 block">前回の鉢替え</span>
+                  <span class="text-[10px] font-semibold ${repot.isAlert ? 'text-amber-700 font-bold' : 'text-stone-700'}">
+                    ${repot.targetDate ? repot.targetDate : '未記録'} 
+                    <span class="text-[9px] font-normal text-stone-500">(${repot.text})</span>
+                  </span>
+                </div>
+                <div class="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 group-hover:bg-tokiwa group-hover:text-white transition">
+                  <i data-lucide="chevron-right" class="w-2.5 h-2.5"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      safeCreateIcons();
+    }
+
+    // 分類フィルター切り替え
+    function setCategoryFilter(cat) {
+      currentCategoryFilter = cat;
+      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        if (btn.dataset.category === cat) {
+          btn.className = 'cat-filter-btn px-3 py-2 rounded-xl transition bg-tokiwa text-white shadow-sm';
+        } else {
+          btn.className = 'cat-filter-btn px-3 py-2 rounded-xl transition bg-white border border-stone-200 text-stone-600 hover:bg-stone-50';
+        }
+      });
+      renderBonsaiList();
+    }
+
+    // 植替検討期フィルターのトグル
+    function toggleRepotFilter() {
+      filterRepotOnly = !filterRepotOnly;
+      const notice = document.getElementById('repotFilterNotice');
+      if (filterRepotOnly) {
+        notice.classList.remove('hidden');
+        switchTab('inventory');
+      } else {
+        notice.classList.add('hidden');
+      }
+      renderBonsaiList();
+    }
+
+    /* ========================================================
+     * ★最重要要件：王道園芸スタイル ガントチャート生成ロジック
+     * 1行目: 季節区分（冬: 1〜2月, 春: 3〜5月, 夏: 6〜8月, 秋: 9〜11月, 冬: 12月）
+     * 2行目: 1〜12月一直線、今月太枠ハイライト
+     * 左列の項目名は2段（複数行折り返し）対応
+     * ======================================================== */
+    function generateGanttTableHTML(schedule) {
+      const nowMonth = new Date().getMonth() + 1; // 1〜12
+
+      const colorMap = {
+        orange: 'bg-amber-100 text-amber-950 border-amber-300 shadow-sm font-semibold',
+        green: 'bg-emerald-100 text-emerald-950 border-emerald-300 shadow-sm font-semibold',
+        teal: 'bg-teal-100 text-teal-950 border-teal-300 shadow-sm font-semibold',
+        indigo: 'bg-indigo-100 text-indigo-950 border-indigo-300 shadow-sm font-semibold',
+        amber: 'bg-yellow-100 text-yellow-950 border-yellow-300 shadow-sm font-semibold',
+        blue: 'bg-sky-100 text-sky-950 border-sky-300 shadow-sm font-semibold',
+        stone: 'bg-[#ebe7dc] text-stone-800 border-stone-300 shadow-sm font-semibold'
+      };
+
+      let rowsHTML = '';
+
+      schedule.forEach((item, idx) => {
+        const itemBg = idx % 2 === 0 ? 'bg-white' : 'bg-[#faf9f6]';
+        let cellsHTML = '';
+        let m = 1;
+
+        while (m <= 12) {
+          const period = (item.periods || []).find(p => p.start === m);
+
+          if (period) {
+            const span = period.end - period.start + 1;
+            const styleClass = colorMap[item.color] || colorMap.stone;
+            const includesCurrent = nowMonth >= period.start && nowMonth <= period.end;
+
+            cellsHTML += `
+              <td colspan="${span}" class="p-0.5 align-middle border-r border-stone-200 text-center ${includesCurrent ? 'relative ring-1.5 ring-emerald-600/30' : ''}">
+                <div class="min-h-[26px] py-0.5 px-1 flex items-center justify-center text-[9px] sm:text-[9.5px] leading-tight rounded border ${styleClass} mx-0.5 break-words" title="${period.text}">
+                  <span>${period.text}</span>
+                </div>
+              </td>
+            `;
+            m += span;
+          } else {
+            const inAnyPeriod = (item.periods || []).some(p => m >= p.start && m <= p.end);
+            if (!inAnyPeriod) {
+              const isCurrent = m === nowMonth;
+              cellsHTML += `
+                <td class="p-0.5 text-center align-middle border-r border-stone-200 text-stone-300 text-[9px] ${isCurrent ? 'current-month-col text-stone-400 font-bold' : ''}">
+                  ···
+                </td>
+              `;
+            }
+            m++;
+          }
+        }
+
+        // 左列の作業項目は幅w-24 sm:w-28＋break-wordsで自然に2段折り返しを許可
+        rowsHTML += `
+          <tr class="${itemBg} border-b border-stone-200 hover:bg-stone-50/80 transition">
+            <td class="py-1.5 px-2 text-[9.5px] sm:text-[10px] font-semibold text-stone-800 border-r border-stone-300 bg-[#f8f6f0] sticky left-0 z-10 w-24 sm:w-28 break-words leading-tight shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
+              ${item.task}
+            </td>
+            ${cellsHTML}
+          </tr>
+        `;
+      });
+
+      return `
+        <div class="overflow-x-auto rounded-xl border border-stone-300 bg-white shadow-sm">
+          <table class="w-full border-collapse text-[9px] sm:text-[10px] min-w-[650px] table-fixed">
+            <thead>
+              <!-- 季節ヘッダー (1行目) -->
+              <tr class="text-[8.5px] sm:text-[9px] font-bold text-stone-700 border-b border-stone-200">
+                <th class="w-24 sm:w-28 py-1 px-1.5 text-left bg-stone-100 border-r border-stone-300">季節区分</th>
+                <th colspan="2" class="py-1 text-center border-r border-stone-200 bg-sky-50/80 text-sky-900">冬 (1〜2月)</th>
+                <th colspan="3" class="py-1 text-center border-r border-stone-200 bg-emerald-50/80 text-emerald-900">春 (3〜5月)</th>
+                <th colspan="3" class="py-1 text-center border-r border-stone-200 bg-amber-50/80 text-amber-900">夏 (6〜8月)</th>
+                <th colspan="3" class="py-1 text-center border-r border-stone-200 bg-orange-50/80 text-orange-900">秋 (9〜11月)</th>
+                <th colspan="1" class="py-1 text-center bg-sky-50/80 text-sky-900">冬 (12月)</th>
+              </tr>
+              <!-- 月ヘッダー (2行目: 1〜12月) -->
+              <tr class="text-[9px] sm:text-[9.5px] font-bold text-stone-600 border-b-2 border-stone-300 bg-[#f4f1ea]">
+                <th class="py-1 px-1.5 text-left border-r border-stone-300">作業項目</th>
+                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
+                  const isCurrent = m === nowMonth;
+                  return `
+                    <th class="py-1 text-center border-r border-stone-200 w-[6.8%] ${isCurrent ? 'current-month-col text-emerald-900 bg-emerald-100/70' : ''}">
+                      ${m}月
+                      ${isCurrent ? '<span class="block text-[7.5px] font-bold text-white bg-emerald-700 px-1 rounded mt-0.2 mx-auto w-fit">今月</span>' : ''}
+                    </th>
+                  `;
+                }).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHTML}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // 手入れガントチャート画面のレンダリング
+    function renderDedicatedGantt() {
+      const speciesList = loadSpeciesList();
+      const select = document.getElementById('ganttSpeciesSelect');
+      const currentSelectedId = select.value || (speciesList[0] ? speciesList[0].id : null);
+
+      // セレクタのオプション構築
+      select.innerHTML = speciesList.map(s => `
+        <option value="${s.id}" ${s.id === currentSelectedId ? 'selected' : ''}>${s.name}</option>
+      `).join('');
+
+      const targetSpecies = speciesList.find(s => s.id === select.value) || speciesList[0];
+      if (!targetSpecies) return;
+
+      // 樹種サマリーの表示
+      const summaryBox = document.getElementById('ganttSpeciesSummary');
+      summaryBox.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="font-mincho font-bold text-sm text-tokiwa-dark">${targetSpecies.name}</span>
+          <span class="text-[9.5px] px-1.5 py-0.2 rounded-full ${getCategoryBadge(targetSpecies.category).class}">${getCategoryBadge(targetSpecies.category).label}</span>
+        </div>
+        <div class="flex items-center gap-3 text-stone-600 text-[10.5px]">
+          <div><strong class="text-stone-700">推奨用土:</strong> ${targetSpecies.soilFormula || '標準用土'}</div>
+          <div><strong class="text-stone-700">見どころ:</strong> ${targetSpecies.highlights || '四季の姿'}</div>
+        </div>
+      `;
+
+      // ガントチャートHTML挿入
+      const container = document.getElementById('dedicatedGanttContainer');
+      container.innerHTML = generateGanttTableHTML(targetSpecies.schedule || []);
+      safeCreateIcons();
+    }
+
+    // 樹種図鑑（お迎えカタログ）のレンダリング
+    function renderSpeciesCatalog() {
+      const list = loadSpeciesList();
+      const grid = document.getElementById('speciesCatalogGrid');
+
+      grid.innerHTML = list.map(s => {
+        const cat = getCategoryBadge(s.category);
+        const img = SVG_ART[s.id] || SVG_ART.kuromatsu;
+
+        return `
+          <div class="bg-washi-card rounded-2xl border border-[#e2ddd0] washi-shadow washi-shadow-hover transition duration-200 overflow-hidden flex flex-col justify-between">
+            <div>
+              <div class="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative border-b border-stone-200">
+                <img src="${img}" alt="${s.name}" class="w-full h-full object-cover">
+                <div class="absolute top-2 left-2">
+                  <span class="text-[9.5px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${cat.class}">
+                    ${cat.label}
+                  </span>
+                </div>
+              </div>
+              <div class="p-4">
+                <h3 class="font-mincho text-base font-bold text-tokiwa-dark">${s.name}</h3>
+                <p class="text-[11px] text-stone-600 mt-1.5 leading-relaxed">${s.description}</p>
+                
+                <div class="mt-3 pt-2.5 border-t border-stone-100 space-y-1.5 text-[10.5px]">
+                  <div>
+                    <span class="text-[10px] font-bold text-tokiwa block">推奨用土:</span>
+                    <span class="text-stone-700 font-medium">${s.soilFormula || '赤玉土7 : 桐生砂3'}</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] font-bold text-tokiwa block">四季の見どころ:</span>
+                    <span class="text-stone-700 font-medium">${s.highlights || '通年鑑賞'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="p-4 pt-0">
+              <button onclick="adoptSpecies('${s.id}')" class="w-full py-2 px-3 rounded-lg bg-tokiwa text-white text-[11px] font-bold hover:bg-tokiwa-light transition flex items-center justify-center gap-1.5 shadow-sm shadow-tokiwa/20">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                <span>この樹種をお迎えする（台帳へ登録）</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      safeCreateIcons();
+    }
+
+    // 図鑑からのお迎え（プリセット入力状態で新規登録モーダルを開く）
+    function adoptSpecies(speciesId) {
+      const speciesList = loadSpeciesList();
+      const target = speciesList.find(s => s.id === speciesId);
+      if (!target) return;
+
+      openNewBonsaiModal({
+        speciesId: target.id,
+        category: target.category,
+        soilFormula: target.soilFormula,
+        name: `${target.name.split('（')[0]} 1号`
+      });
+    }
+
+    // 個別カルテ（詳細モーダル）を開く
+    function openCarteModal(bonsaiId) {
+      currentCarteBonsaiId = bonsaiId;
+      const bonsaiList = loadBonsaiList();
+      const b = bonsaiList.find(item => item.id === bonsaiId);
+      if (!b) return;
+
+      const speciesList = loadSpeciesList();
+      const sp = speciesList.find(s => s.id === b.speciesId) || speciesList[0];
+
+      // 基本情報セット
+      document.getElementById('carteBonsaiName').textContent = b.name;
+      document.getElementById('carteSpeciesName').textContent = b.speciesName;
+      
+      const cat = getCategoryBadge(b.category);
+      const catBadge = document.getElementById('carteCategoryBadge');
+      catBadge.textContent = cat.label;
+      catBadge.className = `text-xs px-2.5 py-0.5 rounded-full font-bold border ${cat.class}`;
+
+      document.getElementById('carteStyle').textContent = b.style || '未設定';
+      document.getElementById('cartePot').textContent = b.pot || '未設定';
+      document.getElementById('carteAcquiredDate').textContent = b.acquiredDate ? `${b.acquiredDate}` : '未記録';
+      document.getElementById('carteAcquiredFrom').textContent = b.acquiredFrom || '未記録';
+      document.getElementById('carteSoilFormula').textContent = b.soilFormula || sp.soilFormula || '赤玉土7 : 桐生砂3';
+      
+      const memoSec = document.getElementById('carteMemoSection');
+      if (b.memo) {
+        memoSec.classList.remove('hidden');
+        document.getElementById('carteMemo').textContent = b.memo;
+      } else {
+        memoSec.classList.add('hidden');
+      }
+
+      // メイン写真
+      const mainImg = document.getElementById('carteMainImage');
+      mainImg.src = b.imageUrl || SVG_ART[b.speciesId] || SVG_ART.kuromatsu;
+
+      // 植え替え経過年数 ＆ アラート表示
+      const repot = calculateRepotYears(b.lastRepotDate, b.acquiredDate);
+      const repotDisplay = document.getElementById('carteLastRepotDisplay');
+      repotDisplay.innerHTML = `${repot.targetDate || '未記録'} <span class="font-normal text-stone-500">(${repot.text})</span>`;
+
+      const alertBox = document.getElementById('carteRepotAlertBox');
+      const alertText = document.getElementById('carteRepotAlertText');
+      if (repot.isAlert) {
+        alertBox.classList.remove('hidden');
+        alertText.innerHTML = `⚠️ 前回の植え替えから<strong>${repot.text}</strong>が経過しています。鉢内の根詰まり・水はけ不良を防ぐため、適期に鉢替え・根さばきをご検討ください。`;
+      } else {
+        alertBox.classList.add('hidden');
+      }
+
+      // ★ 個別カルテ内へのガントチャート直接埋め込み
+      document.getElementById('carteGanttSpeciesTitle').textContent = sp.name;
+      const ganttContainer = document.getElementById('carteEmbeddedGanttContainer');
+      ganttContainer.innerHTML = generateGanttTableHTML(sp.schedule || []);
+
+      // タイムライン描画
+      renderCarteTimeline(b.timeline || []);
+
+      // モーダル表示
+      document.getElementById('carteModal').classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      safeCreateIcons();
+    }
+
+    function closeCarteModal() {
+      document.getElementById('carteModal').classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+      currentCarteBonsaiId = null;
+    }
+
+    // カルテ内タイムラインの描画
+    function renderCarteTimeline(timeline) {
+      const listContainer = document.getElementById('carteTimelineList');
+      if (!timeline || timeline.length === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-6 text-[10.5px] text-stone-400 border border-dashed border-stone-200 rounded-xl">
+            まだお手入れ履歴がありません。「作業・写真を記録」から追加できます。
+          </div>
+        `;
+        return;
+      }
+
+      // 日付の降順（新しい順）
+      const sorted = [...timeline].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      listContainer.innerHTML = sorted.map(t => {
+        const badge = getTimelineTypeBadge(t.type);
+        return `
+          <div class="relative pl-5 pb-4 border-l-2 border-stone-200 last:border-transparent last:pb-0">
+            <!-- タイムラインポイント -->
+            <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-tokiwa border-2 border-white shadow-sm"></div>
+
+            <div class="bg-[#faf9f6] p-3 rounded-xl border border-stone-200/80 shadow-sm">
+              <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded border ${badge.class} flex items-center gap-1">
+                    <i data-lucide="${badge.icon}" class="w-2.5 h-2.5"></i>
+                    <span>${badge.label}</span>
+                  </span>
+                  <span class="font-semibold text-[10.5px] text-stone-700">${t.date}</span>
+                </div>
+              </div>
+
+              <p class="text-[10.5px] text-stone-700 whitespace-pre-wrap leading-relaxed">${t.note}</p>
+
+              ${t.imageUrl ? `
+                <div class="mt-2 w-28 h-20 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shadow-inner">
+                  <img src="${t.imageUrl}" alt="作業写真" class="w-full h-full object-cover">
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      safeCreateIcons();
+    }
+
+    // ユーザー画像アップロード時の自動リサイズ＆圧縮（最大幅900px, JPEG quality 0.75）
+    function compressImageFile(file, maxWidth = 900, quality = 0.75) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+          reject(new Error('有効な画像ファイルではありません'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressedDataUrl);
+          };
+          img.onerror = reject;
+          img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 盆栽フォームの写真アップロードハンドラ
+    async function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressedBase64 = await compressImageFile(file);
+        document.getElementById('formImageData').value = compressedBase64;
+        const preview = document.getElementById('formImagePreview');
+        preview.src = compressedBase64;
+        preview.classList.remove('hidden');
+        document.getElementById('formImagePlaceholder').classList.add('hidden');
+      } catch (err) {
+        showToast('画像の読み込みに失敗しました', 'alert-circle');
+      }
+    }
+
+    // タイムラインの写真アップロードハンドラ
+    async function handleTimelineImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressedBase64 = await compressImageFile(file);
+        document.getElementById('timelineImageData').value = compressedBase64;
+        const preview = document.getElementById('timelineImagePreview');
+        preview.src = compressedBase64;
+        preview.classList.remove('hidden');
+        document.getElementById('timelineImagePlaceholder').classList.add('hidden');
+      } catch (err) {
+        showToast('画像の読み込みに失敗しました', 'alert-circle');
+      }
+    }
+
+    function openNewBonsaiModal(preset = {}) {
+      document.getElementById('bonsaiForm').reset();
+      document.getElementById('formBonsaiId').value = '';
+      document.getElementById('bonsaiFormTitle').textContent = '愛樹を新しく登録';
+      document.getElementById('formImageData').value = '';
+      document.getElementById('formImagePreview').classList.add('hidden');
+      document.getElementById('formImagePlaceholder').classList.remove('hidden');
+
+      // 樹種セレクト生成
+      const speciesList = loadSpeciesList();
+      const sel = document.getElementById('formSpeciesId');
+      sel.innerHTML = speciesList.map(s => `
+        <option value="${s.id}">${s.name}</option>
+      `).join('');
+
+      // 今日を入手日・前回の植え替え日のデフォルトに
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('formAcquiredDate').value = today;
+      document.getElementById('formLastRepotDate').value = today;
+
+      // プリセット適用（図鑑からのお迎え時）
+      if (preset.speciesId) sel.value = preset.speciesId;
+      if (preset.category) document.getElementById('formCategory').value = preset.category;
+      if (preset.soilFormula) document.getElementById('formSoilFormula').value = preset.soilFormula;
+      if (preset.name) document.getElementById('formName').value = preset.name;
+
+      document.getElementById('bonsaiFormModal').classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function openEditBonsaiModal(bonsaiId) {
+      const bonsaiList = loadBonsaiList();
+      const b = bonsaiList.find(item => item.id === bonsaiId);
+      if (!b) return;
+
+      document.getElementById('bonsaiForm').reset();
+      document.getElementById('formBonsaiId').value = b.id;
+      document.getElementById('bonsaiFormTitle').textContent = '愛樹の情報を編集';
+
+      // 樹種セレクト
+      const speciesList = loadSpeciesList();
+      const sel = document.getElementById('formSpeciesId');
+      sel.innerHTML = speciesList.map(s => `
+        <option value="${s.id}">${s.name}</option>
+      `).join('');
+
+      document.getElementById('formName').value = b.name || '';
+      sel.value = b.speciesId || speciesList[0].id;
+      document.getElementById('formCategory').value = b.category || 'conifer';
+      document.getElementById('formStyle').value = b.style || '';
+      document.getElementById('formPot').value = b.pot || '';
+      document.getElementById('formAcquiredDate').value = b.acquiredDate || '';
+      document.getElementById('formAcquiredFrom').value = b.acquiredFrom || '';
+      document.getElementById('formLastRepotDate').value = b.lastRepotDate || '';
+      document.getElementById('formSoilFormula').value = b.soilFormula || '';
+      document.getElementById('formMemo').value = b.memo || '';
+
+      const preview = document.getElementById('formImagePreview');
+      if (b.imageUrl) {
+        document.getElementById('formImageData').value = b.imageUrl;
+        preview.src = b.imageUrl;
+        preview.classList.remove('hidden');
+        document.getElementById('formImagePlaceholder').classList.add('hidden');
+      } else {
+        document.getElementById('formImageData').value = '';
+        preview.classList.add('hidden');
+        document.getElementById('formImagePlaceholder').classList.remove('hidden');
+      }
+
+      document.getElementById('bonsaiFormModal').classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeBonsaiFormModal() {
+      document.getElementById('bonsaiFormModal').classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    function handleSpeciesSelectChange() {
+      const speciesList = loadSpeciesList();
+      const selId = document.getElementById('formSpeciesId').value;
+      const target = speciesList.find(s => s.id === selId);
+      if (target) {
+        document.getElementById('formCategory').value = target.category;
+        document.getElementById('formSoilFormula').value = target.soilFormula || '';
+      }
+    }
+
+    function handleBonsaiFormSubmit(e) {
+      e.preventDefault();
+      const bonsaiList = loadBonsaiList();
+      const id = document.getElementById('formBonsaiId').value;
+      const speciesList = loadSpeciesList();
+      const speciesId = document.getElementById('formSpeciesId').value;
+      const sp = speciesList.find(s => s.id === speciesId);
+
+      const bonsaiData = {
+        id: id || `b-${Date.now()}`,
+        name: document.getElementById('formName').value.trim(),
+        speciesId: speciesId,
+        speciesName: sp ? sp.name : '不明樹種',
+        category: document.getElementById('formCategory').value,
+        style: document.getElementById('formStyle').value.trim(),
+        pot: document.getElementById('formPot').value.trim(),
+        acquiredDate: document.getElementById('formAcquiredDate').value,
+        acquiredFrom: document.getElementById('formAcquiredFrom').value.trim(),
+        lastRepotDate: document.getElementById('formLastRepotDate').value || document.getElementById('formAcquiredDate').value,
+        soilFormula: document.getElementById('formSoilFormula').value.trim(),
+        memo: document.getElementById('formMemo').value.trim(),
+        imageUrl: document.getElementById('formImageData').value || (sp ? SVG_ART[sp.id] : null) || SVG_ART.kuromatsu
+      };
+
+      if (id) {
+        // 更新
+        const index = bonsaiList.findIndex(b => b.id === id);
+        if (index !== -1) {
+          bonsaiData.timeline = bonsaiList[index].timeline || [];
+          bonsaiList[index] = bonsaiData;
+          showToast('愛樹の情報を更新しました');
+        }
+      } else {
+        // 新規登録
+        bonsaiData.timeline = [
+          {
+            id: `tl-${Date.now()}`,
+            date: bonsaiData.acquiredDate || new Date().toISOString().split('T')[0],
+            type: 'other',
+            note: `盆栽手帖に登録しました。（入手元: ${bonsaiData.acquiredFrom || '記録なし'}）`,
+            imageUrl: bonsaiData.imageUrl
+          }
+        ];
+        bonsaiList.unshift(bonsaiData);
+        showToast('新しい愛樹を台帳に登録しました！');
+      }
+
+      saveBonsaiList(bonsaiList);
+      closeBonsaiFormModal();
+      renderBonsaiList();
+
+      // カルテが開いていた場合はカルテも再描画
+      if (currentCarteBonsaiId && currentCarteBonsaiId === id) {
+        openCarteModal(id);
+      }
+    }
+
+    function openAddTimelineModal(bonsaiId, defaultType = null) {
+      document.getElementById('timelineForm').reset();
+      document.getElementById('timelineBonsaiId').value = bonsaiId;
+      document.getElementById('timelineDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('timelineImageData').value = '';
+      document.getElementById('timelineImagePreview').classList.add('hidden');
+      document.getElementById('timelineImagePlaceholder').classList.remove('hidden');
+
+      if (defaultType) {
+        document.getElementById('timelineType').value = defaultType;
+      }
+
+      document.getElementById('timelineFormModal').classList.remove('hidden');
+    }
+
+    function closeTimelineFormModal() {
+      document.getElementById('timelineFormModal').classList.add('hidden');
+    }
+
+    // タイムライン保存 & ★「植え替え」記録時の自動連動ロジック
+    function handleTimelineSubmit(e) {
+      e.preventDefault();
+      const bonsaiList = loadBonsaiList();
+      const bonsaiId = document.getElementById('timelineBonsaiId').value;
+      const b = bonsaiList.find(item => item.id === bonsaiId);
+      if (!b) return;
+
+      const dateVal = document.getElementById('timelineDate').value;
+      const typeVal = document.getElementById('timelineType').value;
+      const noteVal = document.getElementById('timelineNote').value.trim();
+      const imgVal = document.getElementById('timelineImageData').value || null;
+
+      const newEntry = {
+        id: `tl-${Date.now()}`,
+        date: dateVal,
+        type: typeVal,
+        note: noteVal,
+        imageUrl: imgVal
+      };
+
+      if (!b.timeline) b.timeline = [];
+      b.timeline.unshift(newEntry);
+
+      // ★ 必須連動：作業種別が「植え替え」の場合、前回の植え替え日を自動更新！
+      if (typeVal === 'repot') {
+        b.lastRepotDate = dateVal;
+        showToast('植え替え作業を記録し、前回の植え替え日を更新しました！');
+      } else {
+        showToast('お手入れ記録を追加しました');
+      }
+
+      saveBonsaiList(bonsaiList);
+      closeTimelineFormModal();
+
+      // カルテ再描画
+      if (currentCarteBonsaiId === bonsaiId) {
+        openCarteModal(bonsaiId);
+      }
+      renderBonsaiList();
+    }
+
+    // 盆栽削除確認
+    function confirmDeleteBonsai(bonsaiId) {
+      const bonsaiList = loadBonsaiList();
+      const b = bonsaiList.find(item => item.id === bonsaiId);
+      if (!b) return;
+
+      showConfirmDialog(
+        `「${b.name}」を削除`,
+        'この盆栽およびこれまでの手入れ・成長履歴をすべて台帳から削除します。本当によろしいですか？',
+        () => {
+          const updated = bonsaiList.filter(item => item.id !== bonsaiId);
+          saveBonsaiList(updated);
+          closeCarteModal();
+          renderBonsaiList();
+          showToast('愛樹を台帳から削除しました');
+        }
+      );
+    }
+
+    function openNewSpeciesModal() {
+      document.getElementById('speciesForm').reset();
+      document.getElementById('speciesFormModal').classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSpeciesFormModal() {
+      document.getElementById('speciesFormModal').classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    function handleSpeciesFormSubmit(e) {
+      e.preventDefault();
+      const speciesList = loadSpeciesList();
+      const name = document.getElementById('spName').value.trim();
+      const category = document.getElementById('spCategory').value;
+      const soil = document.getElementById('spSoil').value.trim() || '赤玉土7 : 桐生砂3';
+      const desc = document.getElementById('spDesc').value.trim();
+      const high = document.getElementById('spHighlights').value.trim() || '四季の姿';
+
+      const repotStart = parseInt(document.getElementById('spRepotStart').value) || 3;
+      const repotEnd = parseInt(document.getElementById('spRepotEnd').value) || 4;
+      const pruneStart = parseInt(document.getElementById('spPruneStart').value) || 5;
+      const pruneEnd = parseInt(document.getElementById('spPruneEnd').value) || 6;
+
+      const newId = `sp-${Date.now()}`;
+      const newSpecies = {
+        id: newId,
+        name: name,
+        category: category,
+        soilFormula: soil,
+        description: desc,
+        highlights: high,
+        schedule: [
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: repotStart, end: repotEnd, text: `${repotStart}〜${repotEnd}月: 植え替え適期` }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: pruneStart, end: pruneEnd, text: `${pruneStart}〜${pruneEnd}月: 枝整理剪定` }] },
+          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 5, end: 7, text: "5〜7月: 新芽の整理" }] },
+          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 10, end: 12, text: "10〜12月: 整姿作業" }] },
+          { task: "施肥（肥料）", color: "amber", periods: [{ start: 4, end: 5, text: "4〜5月: 春肥" }, { start: 9, end: 10, text: "9〜10月: 秋肥" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [
+            { start: 1, end: 2, text: "2日に1回" },
+            { start: 3, end: 5, text: "1日1回" },
+            { start: 6, end: 8, text: "1日2回" },
+            { start: 9, end: 10, text: "1日1回" },
+            { start: 11, end: 12, text: "2日に1回" }
+          ]},
+          { task: "置き場所・日照・保護", color: "stone", periods: [
+            { start: 1, end: 2, text: "寒風よけ軒下" },
+            { start: 3, end: 6, text: "日当たり・通風良好" },
+            { start: 7, end: 8, text: "半日陰・遮光" },
+            { start: 9, end: 11, text: "よく日に当てる" },
+            { start: 12, end: 12, text: "霜よけ保護" }
+          ]}
+        ]
+      };
+
+      speciesList.push(newSpecies);
+      saveSpeciesList(speciesList);
+      closeSpeciesFormModal();
+      renderSpeciesCatalog();
+      renderDedicatedGantt();
+      showToast(`「${name}」を図鑑に追加しました`);
+    }
+
+    // データバックアップメニュー開閉
+    function toggleDataMenu() {
+      const menu = document.getElementById('dataMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    // メニュー外クリックで閉じる
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('dataMenu');
+      if (!menu.contains(e.target) && !e.target.closest('[onclick="toggleDataMenu()"]')) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    // JSONエクスポート（ダウンロード）
+    function exportData() {
+      const exportObject = {
+        app: "BonsaiTecho",
+        version: "1.0",
+        exportDate: new Date().toISOString(),
+        bonsai: loadBonsaiList(),
+        species: loadSpeciesList()
+      };
+      const jsonStr = JSON.stringify(exportObject, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bonsai_techo_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toggleDataMenu();
+      showToast('バックアップファイルを保存しました');
+    }
+
+    // JSONインポート
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (imported.bonsai && Array.isArray(imported.bonsai)) {
+            showConfirmDialog(
+              'データの復元',
+              'バックアップデータを読み込みます。現在の台帳データは上書きされますがよろしいですか？',
+              () => {
+                saveBonsaiList(imported.bonsai);
+                if (imported.species && Array.isArray(imported.species)) {
+                  saveSpeciesList(imported.species);
+                }
+                renderBonsaiList();
+                renderDedicatedGantt();
+                renderSpeciesCatalog();
+                updateSummaryStats();
+                showToast('データを正常に復元しました');
+              }
+            );
+          } else {
+            showToast('無効なデータ形式です', 'alert-circle');
+          }
+        } catch (err) {
+          showToast('ファイルの読み込みに失敗しました', 'alert-circle');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+      toggleDataMenu();
+    }
+
+    // サンプル初期化
+    function resetToSampleData() {
+      showConfirmDialog(
+        'サンプルの再読み込み',
+        '登録中のデータを初期サンプル（黒松・モミジ・真柏）にリセットしますか？',
+        () => {
+          localStorage.removeItem(LS_KEY_BONSAI);
+          localStorage.removeItem(LS_KEY_SPECIES);
+          renderBonsaiList();
+          renderDedicatedGantt();
+          renderSpeciesCatalog();
+          updateSummaryStats();
+          showToast('初期サンプルデータにリセットしました');
+        }
+      );
+      toggleDataMenu();
+    }
+
+    // 和風確認ダイアログ（alert/confirm代替）
+    function showConfirmDialog(title, message, onOk) {
+      const modal = document.getElementById('confirmModal');
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+
+      const okBtn = document.getElementById('confirmOkBtn');
+      const cancelBtn = document.getElementById('confirmCancelBtn');
+
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+      };
+
+      okBtn.onclick = () => {
+        cleanup();
+        if (onOk) onOk();
+      };
+      cancelBtn.onclick = cleanup;
+
+      modal.classList.remove('hidden');
+    }
+
+    // トースト通知メッセージ
+    let toastTimeout = null;
+    function showToast(message, icon = 'check-circle') {
+      const toast = document.getElementById('toast');
+      const msg = document.getElementById('toastMessage');
+      const ic = document.getElementById('toastIcon');
+
+      msg.textContent = message;
+      ic.setAttribute('data-lucide', icon);
+      safeCreateIcons();
+
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+
+      // ビューパネルの表示切替
+      document.querySelectorAll('.view-panel').forEach(panel => {
+        panel.classList.add('hidden');
+      });
+      const activePanel = document.getElementById(`view-${tabId}`);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      // タブボタンのアクティブ装飾
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-tokiwa', 'text-tokiwa', 'font-bold');
+        btn.classList.add('border-transparent', 'text-stone-600');
+      });
+      const activeTabBtn = document.getElementById(`tab-${tabId}`);
+      if (activeTabBtn) {
+        activeTabBtn.classList.remove('border-transparent', 'text-stone-600');
+        activeTabBtn.classList.add('border-tokiwa', 'text-tokiwa', 'font-bold');
+      }
+
+      // タブごとのリフレッシュ
+      if (tabId === 'inventory') renderBonsaiList();
+      if (tabId === 'gantt') renderDedicatedGantt();
+      if (tabId === 'catalog') renderSpeciesCatalog();
+    }
+
+    // 起動時初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      // データの検証とロード
+      loadSpeciesList();
+      loadBonsaiList();
+
+      // UI初期描画
+      updateSummaryStats();
+      renderBonsaiList();
+      renderDedicatedGantt();
+      renderSpeciesCatalog();
+
+      // Lucide アイコン変換
+      safeCreateIcons();
+    });
+  </script>
+</body>
+</html>
