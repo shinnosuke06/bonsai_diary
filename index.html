@@ -3,6 +3,9 @@
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
   <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
@@ -167,10 +170,10 @@
           </button>
 
           <div class="relative">
-            <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="データバックアップ・復元">
+            <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="データバックアップ・管理メニュー">
               <i data-lucide="settings" class="w-3.5 h-3.5"></i>
             </button>
-            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-stone-200 py-1 z-40 text-[11px] font-medium">
+            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-200 py-1 z-40 text-[11px] font-medium">
               <button onclick="syncWithGoogleSheet(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 flex items-center gap-2 text-emerald-800">
                 <i data-lucide="refresh-cw" class="w-3 h-3 text-emerald-600"></i>
                 <span>スプレッドシートと今すぐ同期</span>
@@ -195,9 +198,13 @@
                 <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importData(event)">
               </label>
               <div class="border-t border-stone-100 my-0.5"></div>
-              <button onclick="resetToSampleData()" class="w-full text-left px-3 py-1.5 hover:bg-rose-50 flex items-center gap-2 text-rose-700">
-                <i data-lucide="rotate-ccw" class="w-3 h-3 text-rose-500"></i>
-                <span>初期サンプルに戻す</span>
+              <button onclick="clearAllBonsaiData()" class="w-full text-left px-3 py-1.5 hover:bg-rose-50 flex items-center gap-2 text-rose-700">
+                <i data-lucide="trash-2" class="w-3 h-3 text-rose-500"></i>
+                <span>台帳を完全に空にする（0件クリア）</span>
+              </button>
+              <button onclick="resetToSampleData()" class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-500 text-[10px]">
+                <i data-lucide="rotate-ccw" class="w-2.5 h-2.5 text-stone-400"></i>
+                <span>テスト用サンプルに戻す</span>
               </button>
             </div>
           </div>
@@ -208,7 +215,7 @@
         <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn py-1.5 px-2 sm:px-2.5 border-b-2 border-tokiwa text-tokiwa font-bold flex items-center gap-1.5 transition whitespace-nowrap">
           <i data-lucide="tree-pine" class="w-3 h-3"></i>
           <span>愛樹台帳（棚場）</span>
-          <span id="tabCountBadge" class="ml-0.5 text-[9px] px-1 py-0.2 rounded-full bg-stone-200 text-stone-700">3</span>
+          <span id="tabCountBadge" class="ml-0.5 text-[9px] px-1 py-0.2 rounded-full bg-stone-200 text-stone-700">0</span>
         </button>
         <button onclick="switchTab('gantt')" id="tab-gantt" class="tab-btn py-1.5 px-2 sm:px-2.5 border-b-2 border-transparent text-stone-600 hover:text-stone-900 flex items-center gap-1.5 transition whitespace-nowrap">
           <i data-lucide="calendar-range" class="w-3 h-3"></i>
@@ -241,7 +248,7 @@
       <div class="flex items-center gap-2 self-stretch md:self-auto justify-end border-t md:border-t-0 border-white/15 pt-1.5 md:pt-0 shrink-0">
         <div class="px-2 py-0.5 rounded-lg bg-white/10 text-center border border-white/15">
           <p class="text-[8px] text-emerald-200">管理鉢数</p>
-          <p id="statTotalBonsai" class="font-mincho text-xs sm:text-sm font-bold">3鉢</p>
+          <p id="statTotalBonsai" class="font-mincho text-xs sm:text-sm font-bold">0鉢</p>
         </div>
         <button onclick="toggleRepotFilter()" class="px-2 py-0.5 rounded-lg bg-amber-400/20 text-center border border-amber-300/40 hover:bg-amber-400/30 transition cursor-pointer">
           <p class="text-[8px] text-amber-200 flex items-center justify-center gap-1">
@@ -296,9 +303,9 @@
         <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-stone-100 flex items-center justify-center text-stone-400">
           <i data-lucide="sprout" class="w-6 h-6"></i>
         </div>
-        <h3 class="font-mincho text-base font-bold text-stone-700">条件に該当する盆栽が見つかりませんでした</h3>
-        <p class="text-[10px] text-stone-500 mt-1">検索条件を変更するか、右上の「盆栽を登録」から愛樹を追加してください。</p>
-        <button onclick="openNewBonsaiModal()" class="mt-3 px-3.5 py-1.5 bg-tokiwa text-white text-[10.5px] font-semibold rounded-lg hover:bg-tokiwa-light transition">＋ 新しい盆栽を登録する</button>
+        <h3 class="font-mincho text-base font-bold text-stone-700">登録されている愛樹がありません</h3>
+        <p class="text-[10px] text-stone-500 mt-1">右上の「盆栽を登録」または「盆栽樹種図鑑」から愛樹を追加してください。</p>
+        <button onclick="openNewBonsaiModal()" class="mt-3 px-3.5 py-1.5 bg-tokiwa text-white text-[10.5px] font-semibold rounded-lg hover:bg-tokiwa-light transition">＋ 最初の盆栽を登録する</button>
       </div>
     </section>
 
@@ -768,7 +775,7 @@
         <i data-lucide="alert-triangle" class="w-5 h-5"></i>
       </div>
       <h3 id="confirmTitle" class="font-mincho text-base font-bold text-stone-800">削除の確認</h3>
-      <p id="confirmMessage" class="text-[10px] text-stone-500 mt-1.5 leading-relaxed">この盆栽を台帳から削除してもよろしいですか？この操作は取り消せません。</p>
+      <p id="confirmMessage" class="text-[10px] text-stone-500 mt-1.5 leading-relaxed">この操作を実行してもよろしいですか？</p>
       <div class="mt-4 flex justify-center gap-2">
         <button id="confirmCancelBtn" class="px-3.5 py-1.5 rounded-lg bg-stone-100 text-stone-700 font-semibold hover:bg-stone-200 transition">キャンセル</button>
         <button id="confirmOkBtn" class="px-4 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-md shadow-rose-600/20">実行する</button>
@@ -803,7 +810,7 @@
             <span>接続状態とセキュリティ保護</span>
           </h4>
           <p class="text-[9.5px] text-stone-600 leading-relaxed bg-white p-2 rounded-xl border border-stone-200">
-            あらかじめ暗号化された連携エンドポイントが組み込まれています。外部からURLを直接閲覧・改ざんされないよう保護されており、手動入力を行わなくても自動的にスプレッドシートへの保存・同期が実行されます。
+            あらかじめ暗号化された連携エンドポイントが組み込まれています。手動入力を行わなくても自動的にスプレッドシートへの保存・同期が実行されます。
           </p>
         </div>
 
@@ -828,14 +835,13 @@
           </div>
         </div>
 
-        <!-- 接続トラブルシューティングの案内枠 -->
         <div id="syncTroubleHelp" class="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-950 space-y-1">
           <span class="font-bold text-[10px] flex items-center gap-1 text-amber-900">
             <i data-lucide="help-circle" class="w-3 h-3 text-amber-600"></i>
             接続エラー（Failed to fetch）が出る場合
           </span>
           <p class="text-[9px] text-amber-900 leading-relaxed">
-            Google Apps Scriptの「新しいデプロイ」画面で、<strong>「アクセスできるユーザー」が『全員（Anyone）』</strong>になっていることをご確認ください。「自分のみ」になっていると、ブラウザ通信がブロックされます。
+            Google Apps Scriptのデプロイ設定で、<strong>「アクセスできるユーザー」が『全員（Anyone）』</strong>になっていることをご確認ください。
           </p>
         </div>
       </div>
@@ -857,7 +863,6 @@
 
   <script>
     // 暗号化バイナリ（XORマスク 42 による可逆バイト列変換）
-    // 文字列検索やgrepでGASのURLやトークンが平文露出しないよう完全保護
     const _SEC_KEY = 42;
     const _ENCRYPTED_ENDPOINT_BYTES = [
       78, 90, 90, 86, 89, 16, 21, 21, 89, 73, 88, 79, 86, 90, 20, 77, 69, 69, 77, 70,
@@ -868,7 +873,6 @@
       83, 90, 86, 26, 64, 69, 83, 21, 79, 82, 79, 73
     ];
 
-    // ランタイム安全復号
     function getDecryptedGasUrl() {
       try {
         return _ENCRYPTED_ENDPOINT_BYTES.map(b => String.fromCharCode(b ^ _SEC_KEY)).join('');
@@ -881,9 +885,10 @@
     const STORAGE_KEY_SPECIES = 'bonsai_techo_species_list';
     const STORAGE_KEY_GAS_URL = 'bonsai_techo_gas_url';
     const STORAGE_KEY_BG_IMAGE = 'bonsai_techo_custom_bg';
+    const STORAGE_KEY_INIT = 'bonsai_techo_is_initialized_v2';
 
-    let inMemoryBonsaiList = [];
-    let inMemorySpeciesList = [];
+    let inMemoryBonsaiList = null;
+    let inMemorySpeciesList = null;
     let isSheetConnected = false;
     let isSyncing = false;
     let currentCarteBonsaiId = null;
@@ -1003,7 +1008,7 @@
       shimpaku: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300"><defs><linearGradient id="bgs" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23f7f5ed"/><stop offset="100%" stop-color="%23e6decb"/></linearGradient></defs><rect width="400" height="300" fill="url(%23bgs)"/><ellipse cx="200" cy="265" rx="120" ry="7" fill="%23d3cab7"/><rect x="130" y="235" width="140" height="28" rx="4" fill="%235d4037"/><ellipse cx="200" cy="237" rx="68" ry="6" fill="%233e2723"/><path d="M190,237 C180,200 150,175 140,140 C130,105 160,85 190,75 C230,60 270,75 290,110 C310,145 290,195 240,210" stroke="%23eee9da" stroke-width="14" stroke-linecap="round" fill="none"/><path d="M192,237 C182,200 154,175 144,140 C134,105 164,85 192,75 C232,60 272,75 292,110 C312,145 292,195 242,210" stroke="%234a2e1b" stroke-width="6" stroke-linecap="round" fill="none"/><ellipse cx="130" cy="135" rx="30" ry="16" fill="%232d6a4f"/><ellipse cx="190" cy="70" rx="40" ry="20" fill="%232d6a4f"/><ellipse cx="290" cy="105" rx="35" ry="18" fill="%232d6a4f"/><ellipse cx="240" cy="205" rx="32" ry="16" fill="%231b4332"/><ellipse cx="235" cy="200" rx="24" ry="12" fill="%2340916c"/></svg>`
     };
 
-    const DEFAULT_BONSAI = [
+    const SAMPLE_BONSAI_DATA = [
       {
         id: "b-01",
         name: "瑞祥（ずいしょう）",
@@ -1025,61 +1030,6 @@
             type: "repot",
             note: "春の植え替え実施。根鉢を3割ほど崩し、傷んだ黒根を整理。赤玉6桐生4で植え付け。",
             imageUrl: SVG_ART.kuromatsu
-          },
-          {
-            id: "tl-01-2",
-            date: "2025-06-28",
-            type: "bud_nipping",
-            note: "今年の芽切り作業。強勢な上部は浅めに、弱勢な下部は深めに切って樹勢を均一化。",
-            imageUrl: null
-          }
-        ]
-      },
-      {
-        id: "b-02",
-        name: "深山（みやま）",
-        speciesId: "momiji",
-        speciesName: "山モミジ（ヤマモミジ）",
-        category: "deciduous",
-        style: "箒立ち（ほうきだち）",
-        pot: "瀬戸焼 白釉丸鉢 4号",
-        acquiredDate: "2022-03-15",
-        acquiredFrom: "近郊盆栽園の実生苗より育成",
-        lastRepotDate: "2025-03-05",
-        soilFormula: "赤玉土8 : 桐生砂2",
-        memo: "繊細な箒立ちの小枝を目指して毎年5月に葉刈りと芽摘みを徹底。秋の透き通るような紅葉が絶品。",
-        imageUrl: SVG_ART.momiji,
-        timeline: [
-          {
-            id: "tl-02-1",
-            date: "2025-03-05",
-            type: "repot",
-            note: "芽出し前の植え替え。底根を薄くさばき、白釉鉢へ収める。水はけ良好。",
-            imageUrl: SVG_ART.momiji
-          }
-        ]
-      },
-      {
-        id: "b-03",
-        name: "雲龍（うんりゅう）",
-        speciesId: "shimpaku",
-        speciesName: "真柏（シンパク）",
-        category: "conifer",
-        style: "懸崖（けんがい）",
-        pot: "常滑焼 泥六角深鉢 4.5号",
-        acquiredDate: "2020-10-01",
-        acquiredFrom: "愛好家交換会にて入手",
-        lastRepotDate: "2023-04-12",
-        soilFormula: "赤玉土6 : 桐生砂4",
-        memo: "天然の舎利（シャリ）が幹を巻き込むように走る。水吸いの赤みを保つため年1回石灰硫黄合剤で舎利を白骨化処理。",
-        imageUrl: SVG_ART.shimpaku,
-        timeline: [
-          {
-            id: "tl-03-1",
-            date: "2023-04-12",
-            type: "repot",
-            note: "前回の鉢替え。深鉢のため底に大粒のゴロ土を多めに配置。",
-            imageUrl: SVG_ART.shimpaku
           }
         ]
       }
@@ -1175,22 +1125,24 @@
 
     function persistToLocalStorage() {
       try {
-        localStorage.setItem(STORAGE_KEY_BONSAI, JSON.stringify(inMemoryBonsaiList));
-        localStorage.setItem(STORAGE_KEY_SPECIES, JSON.stringify(inMemorySpeciesList));
+        localStorage.setItem(STORAGE_KEY_BONSAI, JSON.stringify(inMemoryBonsaiList || []));
+        localStorage.setItem(STORAGE_KEY_SPECIES, JSON.stringify(inMemorySpeciesList || []));
+        localStorage.setItem(STORAGE_KEY_INIT, 'true');
       } catch (err) {
         console.warn("LocalStorage save warning:", err);
       }
     }
 
+    // 0件（空配列 []）であっても初期サンプルに戻さない堅牢なローダー
     function loadBonsaiList() {
-      if (inMemoryBonsaiList && inMemoryBonsaiList.length > 0) {
+      if (inMemoryBonsaiList !== null && inMemoryBonsaiList !== undefined) {
         return inMemoryBonsaiList;
       }
       try {
         const stored = localStorage.getItem(STORAGE_KEY_BONSAI);
-        if (stored) {
+        if (stored !== null) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             inMemoryBonsaiList = parsed;
             return inMemoryBonsaiList;
           }
@@ -1198,18 +1150,20 @@
       } catch (e) {
         console.warn("LocalStorage load error:", e);
       }
-      inMemoryBonsaiList = JSON.parse(JSON.stringify(DEFAULT_BONSAI));
+
+      // 初回訪問時のみ空配列（0件）で初期化
+      inMemoryBonsaiList = [];
       persistToLocalStorage();
       return inMemoryBonsaiList;
     }
 
     function loadSpeciesList() {
-      if (inMemorySpeciesList && inMemorySpeciesList.length > 0) {
+      if (inMemorySpeciesList !== null && inMemorySpeciesList !== undefined) {
         return inMemorySpeciesList;
       }
       try {
         const stored = localStorage.getItem(STORAGE_KEY_SPECIES);
-        if (stored) {
+        if (stored !== null) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
             inMemorySpeciesList = parsed;
@@ -1224,7 +1178,6 @@
       return inMemorySpeciesList;
     }
 
-    // 接続先URLの取得（カスタム設定がなければ暗号化エンドポイントから自動復元）
     function getGasWebAppUrl() {
       const custom = (localStorage.getItem(STORAGE_KEY_GAS_URL) || '').trim();
       if (custom) return custom;
@@ -1936,6 +1889,22 @@
       );
     }
 
+    // 台帳を完全に空（0件）にする機能
+    function clearAllBonsaiData() {
+      showConfirmDialog(
+        '愛樹台帳のクリア',
+        '登録されている盆栽台帳データをすべて消去し、0鉢の空状態にします。よろしいですか？（※スプレッドシート側も空に同期されます）',
+        () => {
+          inMemoryBonsaiList = [];
+          persistToLocalStorage();
+          updateSummaryStats();
+          renderBonsaiList();
+          showToast('愛樹台帳を完全にクリア（0鉢）にしました');
+          pushToGoogleSheet();
+        }
+      );
+    }
+
     function openAddTimelineModal(bonsaiId = null, defaultType = 'other') {
       const targetId = bonsaiId || currentCarteBonsaiId;
       if (!targetId) return;
@@ -2188,15 +2157,12 @@
         }
 
         if (data.status === 'success') {
-          if (Array.isArray(data.bonsai) && data.bonsai.length > 0) {
+          // 配列であれば、0件であってもそのまま正しく反映（サンプルを勝手に復活させない）
+          if (Array.isArray(data.bonsai)) {
             inMemoryBonsaiList = data.bonsai;
           }
           if (Array.isArray(data.species) && data.species.length > 0) {
             inMemorySpeciesList = data.species;
-          }
-
-          if ((!data.bonsai || data.bonsai.length === 0) && inMemoryBonsaiList.length > 0) {
-            await pushToGoogleSheet();
           }
 
           persistToLocalStorage();
@@ -2206,7 +2172,12 @@
           renderSpeciesCatalog();
 
           if (currentCarteBonsaiId) {
-            openCarteModal(currentCarteBonsaiId);
+            const stillExists = inMemoryBonsaiList.some(b => b.id === currentCarteBonsaiId);
+            if (stillExists) {
+              openCarteModal(currentCarteBonsaiId);
+            } else {
+              closeCarteModal();
+            }
           }
 
           isSheetConnected = true;
@@ -2237,10 +2208,11 @@
       if (!gasUrl) return;
 
       try {
+        // 明確に bonsai と species を区別して送信
         const payload = {
           action: 'syncAll',
-          bonsai: inMemoryBonsaiList,
-          species: inMemorySpeciesList
+          bonsai: inMemoryBonsaiList || [],
+          species: inMemorySpeciesList || []
         };
 
         await fetch(gasUrl, {
@@ -2441,7 +2413,7 @@
 
     function exportData() {
       const data = {
-        version: "1.0",
+        version: "2.0",
         exportDate: new Date().toISOString(),
         bonsai: loadBonsaiList(),
         species: loadSpeciesList()
@@ -2488,17 +2460,17 @@
 
     function resetToSampleData() {
       showConfirmDialog(
-        '初期サンプルに戻す',
-        '現在の台帳データをすべて消去し、最初のサンプル（黒松・モミジ・真柏）に初期化します。よろしいですか？',
+        'テストサンプルの読込',
+        '動作テスト用のサンプル盆栽データを読み込みますか？（※現在の台帳は上書きされます）',
         () => {
-          inMemoryBonsaiList = JSON.parse(JSON.stringify(DEFAULT_BONSAI));
+          inMemoryBonsaiList = JSON.parse(JSON.stringify(SAMPLE_BONSAI_DATA));
           inMemorySpeciesList = JSON.parse(JSON.stringify(DEFAULT_SPECIES));
           persistToLocalStorage();
           updateSummaryStats();
           renderBonsaiList();
           renderDedicatedGantt();
           renderSpeciesCatalog();
-          showToast('サンプルデータに初期化しました');
+          showToast('サンプルデータを読み込みました');
           pushToGoogleSheet();
         }
       );
@@ -2522,6 +2494,7 @@
     window.handleTimelineImageUpload = handleTimelineImageUpload;
     window.handleTimelineSubmit = handleTimelineSubmit;
     window.confirmDeleteBonsai = confirmDeleteBonsai;
+    window.clearAllBonsaiData = clearAllBonsaiData;
     window.openNewSpeciesModal = openNewSpeciesModal;
     window.closeSpeciesFormModal = closeSpeciesFormModal;
     window.handleSpeciesFormSubmit = handleSpeciesFormSubmit;
