@@ -2410,8 +2410,8 @@
             });
           }
 
-          // GASへ削除リクエスト送信（ドライブ画像ゴミ箱移動 ＆ シート行削除）
-          await deleteBonsaiFromRemote(targetId, imageUrlsToDelete);
+          // GASへ削除リクエスト送信（3重追跡でドライブ画像ゴミ箱移動 ＆ シート行削除）
+          const result = await deleteBonsaiFromRemote(targetId, imageUrlsToDelete);
 
           // 手元から削除
           inMemoryBonsaiList = inMemoryBonsaiList.filter(item => item.id !== targetId);
@@ -2420,14 +2420,19 @@
           renderBonsaiList();
           closeCarteModal();
 
-          showToast(`「${b.name}」とドライブ写真を完全に削除しました`);
+          if (result && result.success) {
+            const countMsg = result.deletedCount > 0 ? `（ドライブ写真 ${result.deletedCount}枚を消去）` : '';
+            showToast(`「${b.name}」を削除しました${countMsg}`);
+          } else {
+            showToast(`「${b.name}」を削除しました`);
+          }
         }
       );
     }
 
     async function deleteBonsaiFromRemote(bonsaiId, imageUrls) {
       const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) return;
+      if (!gasUrl) return { success: false, deletedCount: 0 };
 
       try {
         const payload = {
@@ -2442,12 +2447,16 @@
           body: JSON.stringify(payload)
         });
         const resJson = await response.json();
-        if (resJson && resJson.status === 'success' && resJson.lastModified) {
-          localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, String(resJson.lastModified));
+        if (resJson && resJson.status === 'success') {
+          if (resJson.lastModified) {
+            localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, String(resJson.lastModified));
+          }
+          return { success: true, deletedCount: resJson.deletedImagesCount || 0 };
         }
       } catch (e) {
         console.warn("Remote delete warning:", e);
       }
+      return { success: false, deletedCount: 0 };
     }
 
     function clearAllBonsaiData() {
