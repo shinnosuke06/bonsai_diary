@@ -3,6 +3,9 @@
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
   <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
@@ -10,8 +13,8 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Shippori Mincho & Zen Kaku Gothic New -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -1130,7 +1133,6 @@
       }
     }
 
-    // 0件（空配列 []）であっても初期サンプルに戻さない堅牢なローダー
     function loadBonsaiList() {
       if (inMemoryBonsaiList !== null && inMemoryBonsaiList !== undefined) {
         return inMemoryBonsaiList;
@@ -1148,7 +1150,6 @@
         console.warn("LocalStorage load error:", e);
       }
 
-      // 初回訪問時のみ空配列（0件）で初期化
       inMemoryBonsaiList = [];
       persistToLocalStorage();
       return inMemoryBonsaiList;
@@ -1874,30 +1875,29 @@
       showConfirmDialog(
         `「${b.name}」を削除`,
         'この愛樹の台帳データ（手入れ記録・写真を含む）を完全に削除します。よろしいですか？',
-        () => {
+        async () => {
           inMemoryBonsaiList = inMemoryBonsaiList.filter(item => item.id !== targetId);
           persistToLocalStorage();
           updateSummaryStats();
           renderBonsaiList();
           closeCarteModal();
           showToast(`「${b.name}」を台帳から削除しました`);
-          pushToGoogleSheet();
+          await pushToGoogleSheet();
         }
       );
     }
 
-    // 台帳を完全に空（0件）にする機能
     function clearAllBonsaiData() {
       showConfirmDialog(
         '愛樹台帳のクリア',
         '登録されている盆栽台帳データをすべて消去し、0鉢の空状態にします。よろしいですか？（※スプレッドシート側も空に同期されます）',
-        () => {
+        async () => {
           inMemoryBonsaiList = [];
           persistToLocalStorage();
           updateSummaryStats();
           renderBonsaiList();
           showToast('愛樹台帳を完全にクリア（0鉢）にしました');
-          pushToGoogleSheet();
+          await pushToGoogleSheet();
         }
       );
     }
@@ -2154,12 +2154,19 @@
         }
 
         if (data.status === 'success') {
-          // 配列であれば、0件であってもそのまま正しく反映（サンプルを勝手に復活させない）
-          if (Array.isArray(data.bonsai)) {
-            inMemoryBonsaiList = data.bonsai;
-          }
-          if (Array.isArray(data.species) && data.species.length > 0) {
-            inMemorySpeciesList = data.species;
+          const remoteBonsai = Array.isArray(data.bonsai) ? data.bonsai : [];
+          const remoteSpecies = Array.isArray(data.species) ? data.species : [];
+          const localBonsai = inMemoryBonsaiList || [];
+
+          if (remoteBonsai.length === 0 && localBonsai.length > 0) {
+            await pushToGoogleSheet();
+            if (showFeedback) showToast(`手元の愛樹（${localBonsai.length}鉢）をスプレッドシートに保存・同期しました！`);
+          } else {
+            inMemoryBonsaiList = remoteBonsai;
+            if (remoteSpecies.length > 0) {
+              inMemorySpeciesList = remoteSpecies;
+            }
+            if (showFeedback) showToast('スプレッドシートと同期完了！');
           }
 
           persistToLocalStorage();
@@ -2179,7 +2186,6 @@
 
           isSheetConnected = true;
           updateCloudStatusUI(true);
-          if (showFeedback) showToast('スプレッドシートと同期完了！');
         } else {
           throw new Error(data.message || '同期エラー');
         }
@@ -2202,23 +2208,25 @@
 
     async function pushToGoogleSheet() {
       const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) return;
+      if (!gasUrl) return false;
 
       try {
-        // 明確に bonsai と species を区別して送信
         const payload = {
           action: 'syncAll',
           bonsai: inMemoryBonsaiList || [],
           species: inMemorySpeciesList || []
         };
 
-        await fetch(gasUrl, {
+        const response = await fetch(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload)
         });
+        const resJson = await response.json();
+        return resJson && resJson.status === 'success';
       } catch (err) {
-        console.warn("Push to Google Sheet skipped:", err);
+        console.warn("Push to Google Sheet skipped/failed:", err);
+        return false;
       }
     }
 
@@ -2427,12 +2435,12 @@
       showToast('台帳データをJSONとして書き出しました');
     }
 
-    function importData(e) {
+    async function importData(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           const parsed = JSON.parse(event.target.result);
           if (Array.isArray(parsed.bonsai)) {
@@ -2446,10 +2454,22 @@
           renderBonsaiList();
           renderDedicatedGantt();
           renderSpeciesCatalog();
-          showToast('バックアップデータから正常に復元しました！');
-          pushToGoogleSheet();
+
+          showToast('復元中...スプレッドシートへ保存しています', 'refresh-cw');
+          const pushSuccess = await pushToGoogleSheet();
+
+          if (pushSuccess) {
+            showToast('バックアップから復元し、スプレッドシートへ保存完了！');
+            isSheetConnected = true;
+            updateCloudStatusUI(true);
+          } else {
+            showToast('手元に復元完了（スプレッドシート送信を確認中）');
+          }
         } catch (err) {
+          console.error("Import error:", err);
           showToast('ファイルの読み込みに失敗しました', 'alert-circle');
+        } finally {
+          e.target.value = '';
         }
       };
       reader.readAsText(file);
@@ -2459,7 +2479,7 @@
       showConfirmDialog(
         'テストサンプルの読込',
         '動作テスト用のサンプル盆栽データを読み込みますか？（※現在の台帳は上書きされます）',
-        () => {
+        async () => {
           inMemoryBonsaiList = JSON.parse(JSON.stringify(SAMPLE_BONSAI_DATA));
           inMemorySpeciesList = JSON.parse(JSON.stringify(DEFAULT_SPECIES));
           persistToLocalStorage();
@@ -2468,7 +2488,7 @@
           renderDedicatedGantt();
           renderSpeciesCatalog();
           showToast('サンプルデータを読み込みました');
-          pushToGoogleSheet();
+          await pushToGoogleSheet();
         }
       );
     }
