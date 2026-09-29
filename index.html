@@ -3,6 +3,9 @@
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
   <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
@@ -170,8 +173,12 @@
             <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="データバックアップ・管理メニュー">
               <i data-lucide="settings" class="w-3.5 h-3.5"></i>
             </button>
-            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-xl border border-stone-200 py-1.5 z-40 text-[11px] font-medium">
-              <div class="px-3 py-1 text-[9.5px] font-bold text-stone-400 border-b border-stone-100">スプレッドシート同期操作</div>
+            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-stone-200 py-1.5 z-40 text-[11px] font-medium">
+              <div class="px-3 py-1 text-[9.5px] font-bold text-stone-400 border-b border-stone-100">クラウド・画像同期操作</div>
+              <button onclick="checkAndSyncDriveImages(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-indigo-50 flex items-center gap-2 text-indigo-800">
+                <i data-lucide="images" class="w-3 h-3 text-indigo-600"></i>
+                <span>📸 ドライブ画像枚数照合 ＆ 一括同期</span>
+              </button>
               <button onclick="pushToGoogleSheetWithFeedback(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 flex items-center gap-2 text-emerald-800">
                 <i data-lucide="upload-cloud" class="w-3 h-3 text-emerald-600"></i>
                 <span>手元の愛樹データをシートへ送信</span>
@@ -363,7 +370,7 @@
         <span>— 愛樹の健やかな成長と共に</span>
       </div>
       <div class="flex items-center gap-2 text-[9.5px] text-stone-400">
-        <span>Googleスプレッドシート連携対応</span>
+        <span>Googleスプレッドシート & ドライブ連携</span>
         <span>•</span>
         <span id="displayUserId" class="font-mono text-stone-400">連携確認中</span>
       </div>
@@ -772,11 +779,78 @@
       <div id="confirmIconBox" class="w-10 h-10 mx-auto mb-2.5 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
         <i data-lucide="alert-triangle" class="w-5 h-5"></i>
       </div>
-      <h3 id="confirmTitle" class="font-mincho text-base font-bold text-stone-800">削除の確認</h3>
+      <h3 id="confirmTitle" class="font-mincho text-base font-bold text-stone-800">確認</h3>
       <p id="confirmMessage" class="text-[10px] text-stone-500 mt-1.5 leading-relaxed">この操作を実行してもよろしいですか？</p>
       <div class="mt-4 flex justify-center gap-2">
         <button id="confirmCancelBtn" class="px-3.5 py-1.5 rounded-lg bg-stone-100 text-stone-700 font-semibold hover:bg-stone-200 transition">キャンセル</button>
         <button id="confirmOkBtn" class="px-4 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-md shadow-rose-600/20">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: 画像枚数照合＆ドライブ一括同期モーダル -->
+  <div id="driveImageSyncModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md bg-washi-card rounded-2xl border border-stone-200 washi-shadow overflow-hidden p-4 sm:p-5 animate-fade-in text-[10.5px]">
+      <div class="flex items-center justify-between pb-2.5 border-b border-stone-200">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center">
+            <i data-lucide="images" class="w-3.5 h-3.5"></i>
+          </div>
+          <div>
+            <h3 class="font-mincho text-xs sm:text-sm font-bold text-tokiwa-dark">Googleドライブ画像照合 ＆ 一括同期</h3>
+            <p class="text-[9px] text-stone-500">写真の枚数整合とドライブURLの一括上書き更新</p>
+          </div>
+        </div>
+        <button onclick="closeDriveImageSyncModal()" class="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <div class="py-3 space-y-3">
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <div class="p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+            <span class="text-[9px] text-stone-500 block">アプリ内の写真総数</span>
+            <span id="imgModalAppCount" class="font-mincho font-bold text-base text-stone-800">- 枚</span>
+            <span id="imgModalUnsyncedCount" class="text-[8.5px] text-amber-700 block mt-0.5">未保存: - 枚</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200">
+            <span class="text-[9px] text-indigo-700 block">Googleドライブ上の保存数</span>
+            <span id="imgModalDriveCount" class="font-mincho font-bold text-base text-indigo-950">- 枚</span>
+            <span id="imgModalDriveStatus" class="text-[8.5px] text-indigo-600 block mt-0.5">照合中...</span>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-white border border-stone-200 space-y-1">
+          <div class="flex items-center justify-between">
+            <strong class="font-bold text-stone-800 text-[10px]">画質・解像度について</strong>
+            <span class="text-[8px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-semibold">品質維持</span>
+          </div>
+          <p class="text-[9px] text-stone-600 leading-relaxed">
+            手元に保存されている画像データをそのままGoogleドライブへ転送・上書きするため、<strong>同期の際に画像が縮小されたり画質が落ちることはありません。</strong>
+          </p>
+        </div>
+
+        <div id="imgSyncProgressBarContainer" class="hidden space-y-1">
+          <div class="flex justify-between text-[9px] text-stone-600 font-bold">
+            <span id="imgSyncProgressText">同期アップロード中...</span>
+            <span id="imgSyncProgressPercent">0%</span>
+          </div>
+          <div class="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
+            <div id="imgSyncProgressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div id="imgSyncResultAlert" class="hidden p-2 rounded-xl text-[9.5px]"></div>
+      </div>
+
+      <div class="pt-2.5 border-t border-stone-200 flex justify-end gap-2">
+        <button onclick="closeDriveImageSyncModal()" class="px-3 py-1 rounded-lg bg-stone-200 text-stone-700 font-semibold text-[10px] hover:bg-stone-300 transition">
+          閉じる
+        </button>
+        <button id="imgSyncExecuteBtn" onclick="executeDriveBatchSync()" class="px-3.5 py-1 rounded-lg bg-indigo-700 text-white font-bold text-[10px] hover:bg-indigo-800 transition shadow-sm flex items-center gap-1.5">
+          <i data-lucide="upload-cloud" class="w-3 h-3"></i>
+          <span>未保存の写真をドライブへ一括保存</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1163,6 +1237,225 @@
       const custom = (localStorage.getItem(STORAGE_KEY_GAS_URL) || '').trim();
       if (custom) return custom;
       return getDecryptedGasUrl();
+    }
+
+    // ==========================================
+    // 画像スキャン・枚数照合・ドライブ一括同期
+    // ==========================================
+    function scanAllImages() {
+      const bonsaiList = loadBonsaiList();
+      const speciesList = loadSpeciesList();
+
+      const imageItems = [];
+
+      bonsaiList.forEach(b => {
+        if (b.imageUrl) {
+          imageItems.push({
+            type: 'bonsai',
+            id: b.id,
+            name: b.name,
+            imageUrl: b.imageUrl,
+            isBase64: b.imageUrl.startsWith('data:image'),
+            isDrive: b.imageUrl.includes('googleusercontent.com') || b.imageUrl.includes('drive.google.com')
+          });
+        }
+        if (Array.isArray(b.timeline)) {
+          b.timeline.forEach(tl => {
+            if (tl.imageUrl) {
+              imageItems.push({
+                type: 'timeline',
+                id: tl.id,
+                bonsaiId: b.id,
+                name: `${b.name}（${tl.date}記録）`,
+                imageUrl: tl.imageUrl,
+                isBase64: tl.imageUrl.startsWith('data:image'),
+                isDrive: tl.imageUrl.includes('googleusercontent.com') || tl.imageUrl.includes('drive.google.com')
+              });
+            }
+          });
+        }
+      });
+
+      speciesList.forEach(sp => {
+        if (sp.imageUrl) {
+          imageItems.push({
+            type: 'species',
+            id: sp.id,
+            name: sp.name,
+            imageUrl: sp.imageUrl,
+            isBase64: sp.imageUrl.startsWith('data:image'),
+            isDrive: sp.imageUrl.includes('googleusercontent.com') || sp.imageUrl.includes('drive.google.com')
+          });
+        }
+      });
+
+      const totalCount = imageItems.length;
+      const base64Count = imageItems.filter(item => item.isBase64).length;
+      const driveCount = imageItems.filter(item => item.isDrive).length;
+
+      return {
+        items: imageItems,
+        totalCount,
+        base64Count,
+        driveCount
+      };
+    }
+
+    async function checkAndSyncDriveImages() {
+      const modal = document.getElementById('driveImageSyncModal');
+      const appCountEl = document.getElementById('imgModalAppCount');
+      const unsyncedEl = document.getElementById('imgModalUnsyncedCount');
+      const driveCountEl = document.getElementById('imgModalDriveCount');
+      const driveStatusEl = document.getElementById('imgModalDriveStatus');
+      const alertEl = document.getElementById('imgSyncResultAlert');
+      const progressContainer = document.getElementById('imgSyncProgressBarContainer');
+
+      if (!modal) return;
+
+      const scanResult = scanAllImages();
+      if (appCountEl) appCountEl.textContent = `${scanResult.totalCount} 枚`;
+      if (unsyncedEl) unsyncedEl.textContent = `未保存（手元のみ）: ${scanResult.base64Count} 枚`;
+      if (driveCountEl) driveCountEl.textContent = '照会中...';
+      if (driveStatusEl) driveStatusEl.textContent = 'ドライブ通信中...';
+      if (alertEl) alertEl.classList.add('hidden');
+      if (progressContainer) progressContainer.classList.add('hidden');
+
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      safeCreateIcons();
+
+      const gasUrl = getGasWebAppUrl();
+      if (!gasUrl) {
+        if (driveCountEl) driveCountEl.textContent = '未接続';
+        if (driveStatusEl) driveStatusEl.textContent = '連携URL未設定';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${gasUrl}?action=getDriveImageCount`, { method: 'GET' });
+        const resJson = await response.json();
+        if (resJson && resJson.status === 'success') {
+          const driveFileCount = resJson.count || 0;
+          if (driveCountEl) driveCountEl.textContent = `${driveFileCount} 枚`;
+          if (driveStatusEl) {
+            if (scanResult.base64Count === 0 && driveFileCount >= scanResult.totalCount) {
+              driveStatusEl.textContent = '🟢 整合完了（全画像保存済）';
+              driveStatusEl.className = 'text-[8.5px] text-emerald-700 font-bold block mt-0.5';
+            } else {
+              driveStatusEl.textContent = `⚠️ 未保存が ${scanResult.base64Count} 枚あります`;
+              driveStatusEl.className = 'text-[8.5px] text-amber-700 font-bold block mt-0.5';
+            }
+          }
+        } else {
+          if (driveCountEl) driveCountEl.textContent = '取得失敗';
+          if (driveStatusEl) driveStatusEl.textContent = resJson.message || 'フォルダ未設定';
+        }
+      } catch (err) {
+        if (driveCountEl) driveCountEl.textContent = 'エラー';
+        if (driveStatusEl) driveStatusEl.textContent = '通信失敗';
+      }
+    }
+
+    function closeDriveImageSyncModal() {
+      const modal = document.getElementById('driveImageSyncModal');
+      if (modal) modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    async function executeDriveBatchSync() {
+      const scanResult = scanAllImages();
+      const unsyncedItems = scanResult.items.filter(item => item.isBase64);
+
+      if (unsyncedItems.length === 0) {
+        showToast('未保存の写真はありません。すべてGoogleドライブへ保存済みです！');
+        return;
+      }
+
+      const progressContainer = document.getElementById('imgSyncProgressBarContainer');
+      const progressBar = document.getElementById('imgSyncProgressBar');
+      const progressText = document.getElementById('imgSyncProgressText');
+      const progressPercent = document.getElementById('imgSyncProgressPercent');
+      const executeBtn = document.getElementById('imgSyncExecuteBtn');
+      const alertEl = document.getElementById('imgSyncResultAlert');
+
+      if (progressContainer) progressContainer.classList.remove('hidden');
+      if (executeBtn) {
+        executeBtn.disabled = true;
+        executeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < unsyncedItems.length; i++) {
+        const item = unsyncedItems[i];
+        const currentNum = i + 1;
+        const total = unsyncedItems.length;
+        const percent = Math.round((currentNum / total) * 100);
+
+        if (progressBar) progressBar.style.width = `${percent}%`;
+        if (progressPercent) progressPercent.textContent = `${percent}%`;
+        if (progressText) progressText.textContent = `${currentNum}/${total} 枚目をアップロード中: ${item.name}`;
+
+        try {
+          const driveUrl = await uploadImageToGoogleDrive(item.imageUrl, `sync_${item.type}_${item.id}_${Date.now()}.jpg`);
+          
+          if (driveUrl && driveUrl.startsWith('http')) {
+            // アプリ内データのURLを置き換え更新
+            if (item.type === 'bonsai') {
+              const b = inMemoryBonsaiList.find(x => x.id === item.id);
+              if (b) b.imageUrl = driveUrl;
+            } else if (item.type === 'timeline') {
+              const b = inMemoryBonsaiList.find(x => x.id === item.bonsaiId);
+              if (b && Array.isArray(b.timeline)) {
+                const tl = b.timeline.find(x => x.id === item.id);
+                if (tl) tl.imageUrl = driveUrl;
+              }
+            } else if (item.type === 'species') {
+              const sp = inMemorySpeciesList.find(x => x.id === item.id);
+              if (sp) sp.imageUrl = driveUrl;
+            }
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (uploadErr) {
+          console.warn("Upload failed for item:", item.name, uploadErr);
+          failCount++;
+        }
+      }
+
+      persistToLocalStorage();
+      renderBonsaiList();
+      renderDedicatedGantt();
+      renderSpeciesCatalog();
+      if (currentCarteBonsaiId) {
+        openCarteModal(currentCarteBonsaiId);
+      }
+
+      // スプレッドシート側にも新しいドライブURLを一括反映
+      showToast('スプレッドシートのURLデータを一括更新中...', 'refresh-cw');
+      await pushToGoogleSheet();
+
+      if (executeBtn) {
+        executeBtn.disabled = false;
+        executeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+
+      if (alertEl) {
+        alertEl.classList.remove('hidden');
+        if (failCount === 0) {
+          alertEl.className = 'p-2 rounded-xl text-[9.5px] bg-emerald-50 text-emerald-900 border border-emerald-300';
+          alertEl.innerHTML = `<strong>同期完了:</strong> ${successCount}枚の写真すべてをGoogleドライブへ保存し、URLを一括上書き更新しました！`;
+        } else {
+          alertEl.className = 'p-2 rounded-xl text-[9.5px] bg-amber-50 text-amber-900 border border-amber-300';
+          alertEl.innerHTML = `<strong>一部完了:</strong> ${successCount}枚を保存、${failCount}枚で通信エラーが発生しました。`;
+        }
+      }
+
+      showToast(`写真の一括同期が完了しました（成功: ${successCount}枚）`);
+      // 照合表示を再計算
+      checkAndSyncDriveImages();
     }
 
     function switchTab(tabId) {
@@ -2111,12 +2404,10 @@
       pushToGoogleSheet();
     }
 
-    // スプレッドシートの1セル50,000文字上限エラーを防ぐための安全サニタイズ関数
     function sanitizeForSpreadsheet(list) {
       if (!Array.isArray(list)) return [];
       return list.map(item => {
         const copy = JSON.parse(JSON.stringify(item));
-        // Base64が残っていて極端に長い場合、50,000文字制限でGASがクラッシュするのを防止
         if (copy.imageUrl && copy.imageUrl.startsWith('data:image') && copy.imageUrl.length > 20000) {
           copy.imageUrl = "local_stored_photo";
         }
@@ -2223,7 +2514,6 @@
       );
     }
 
-    // 双方向スマート同期（今すぐ同期ボタン）
     async function syncWithGoogleSheet(showFeedback = true) {
       const gasUrl = getGasWebAppUrl();
       if (!gasUrl) {
@@ -2235,7 +2525,6 @@
         return;
       }
 
-      // 手動で同期ボタンを押した場合は確認ダイアログを挟む
       if (showFeedback) {
         const count = (inMemoryBonsaiList || []).length;
         const msg = count > 0
@@ -2252,7 +2541,6 @@
         return;
       }
 
-      // 起動時などの自動同期は確認ポップアップなしで静かに実行
       await executeSyncWithGoogleSheet(gasUrl, false);
     }
 
@@ -2264,7 +2552,6 @@
       try {
         const localList = inMemoryBonsaiList || [];
 
-        // 手元に盆栽がある場合は、まず手元の内容をスプレッドシートへ送信（保存）
         if (localList.length > 0) {
           const pushOk = await pushToGoogleSheet();
           if (pushOk) {
@@ -2275,7 +2562,6 @@
           }
         }
 
-        // 手元が0件の場合、スプレッドシート側に登録があるか問い合わせて取得
         const response = await fetch(gasUrl, { method: 'GET' });
         const text = await response.text();
         let data;
@@ -2615,6 +2901,9 @@
     window.pullFromGoogleSheet = pullFromGoogleSheet;
     window.setAsAppBackground = setAsAppBackground;
     window.removeCustomBackground = removeCustomBackground;
+    window.checkAndSyncDriveImages = checkAndSyncDriveImages;
+    window.closeDriveImageSyncModal = closeDriveImageSyncModal;
+    window.executeDriveBatchSync = executeDriveBatchSync;
 
     window.addEventListener('DOMContentLoaded', () => {
       loadBonsaiList();
