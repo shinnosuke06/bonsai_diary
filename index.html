@@ -3,6 +3,9 @@
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
   <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
@@ -150,15 +153,15 @@
             <span id="headerAlertCount" class="font-bold text-amber-700">0鉢</span>
           </button>
 
-          <!-- スプレッドシート連携・共同同期ステータスバッジ -->
-          <button id="syncStatusBadge" onclick="openSyncGuideModal()" class="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-300 shadow-sm hover:bg-stone-200 active:scale-95 transition cursor-pointer" title="スプレッドシート連携と共同管理設定">
+          <!-- スプレッドシート連携・同期ステータスボタン -->
+          <button id="syncStatusBadge" onclick="syncWithGoogleSheet(true)" class="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-300 shadow-sm hover:bg-stone-200 active:scale-95 transition cursor-pointer" title="クリックしてスプレッドシートと今すぐ同期">
             <span id="syncStatusDot" class="relative flex h-2 w-2">
               <span id="syncPingAnim" class="hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span id="syncDotBg" class="relative inline-flex rounded-full h-2 w-2 bg-stone-400"></span>
             </span>
             <span class="hidden sm:inline">シート共有:</span>
             <span id="syncStatusText" class="font-bold">未接続</span>
-            <i data-lucide="table-2" class="w-2.5 h-2.5 text-stone-500 ml-0.5"></i>
+            <i data-lucide="refresh-cw" class="w-2.5 h-2.5 text-stone-500 ml-0.5"></i>
           </button>
 
           <button onclick="openNewBonsaiModal()" class="flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-lg text-[10.5px] sm:text-[11px] font-semibold bg-tokiwa text-white hover:bg-tokiwa-light transition shadow-sm shadow-tokiwa/25 active:scale-95">
@@ -170,21 +173,26 @@
             <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="データバックアップ・管理メニュー">
               <i data-lucide="settings" class="w-3.5 h-3.5"></i>
             </button>
-            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-200 py-1 z-40 text-[11px] font-medium">
-              <button onclick="syncWithGoogleSheet(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 flex items-center gap-2 text-emerald-800">
-                <i data-lucide="refresh-cw" class="w-3 h-3 text-emerald-600"></i>
-                <span>スプレッドシートと今すぐ同期</span>
+            <div id="dataMenu" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-xl border border-stone-200 py-1.5 z-40 text-[11px] font-medium">
+              <div class="px-3 py-1 text-[9.5px] font-bold text-stone-400 border-b border-stone-100">スプレッドシート同期操作</div>
+              <button onclick="pushToGoogleSheetWithFeedback(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 flex items-center gap-2 text-emerald-800">
+                <i data-lucide="upload-cloud" class="w-3 h-3 text-emerald-600"></i>
+                <span>手元の愛樹データをシートへ送信</span>
+              </button>
+              <button onclick="pullFromGoogleSheet(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-sky-50 flex items-center gap-2 text-sky-800">
+                <i data-lucide="download-cloud" class="w-3 h-3 text-sky-600"></i>
+                <span>シートから最新データを読み込み</span>
               </button>
               <button onclick="openSyncGuideModal(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-700">
-                <i data-lucide="table-2" class="w-3 h-3 text-emerald-700"></i>
-                <span>スプレッドシート連携設定</span>
+                <i data-lucide="table-2" class="w-3 h-3 text-stone-600"></i>
+                <span>連携設定を確認・変更</span>
               </button>
-              <div class="border-t border-stone-100 my-0.5"></div>
+              <div class="border-t border-stone-100 my-1"></div>
+              <div class="px-3 py-0.5 text-[9.5px] font-bold text-stone-400">表示・バックアップ</div>
               <button onclick="removeCustomBackground(); toggleDataMenu();" class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-700">
                 <i data-lucide="image-off" class="w-3 h-3 text-stone-500"></i>
                 <span>背景画像をリセット</span>
               </button>
-              <div class="border-t border-stone-100 my-0.5"></div>
               <button onclick="exportData()" class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-700">
                 <i data-lucide="download" class="w-3 h-3 text-emerald-700"></i>
                 <span>データ保存 (JSON)</span>
@@ -194,14 +202,10 @@
                 <span>データ復元 (JSON)</span>
                 <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importData(event)">
               </label>
-              <div class="border-t border-stone-100 my-0.5"></div>
+              <div class="border-t border-stone-100 my-1"></div>
               <button onclick="clearAllBonsaiData()" class="w-full text-left px-3 py-1.5 hover:bg-rose-50 flex items-center gap-2 text-rose-700">
                 <i data-lucide="trash-2" class="w-3 h-3 text-rose-500"></i>
                 <span>台帳を完全に空にする（0件クリア）</span>
-              </button>
-              <button onclick="resetToSampleData()" class="w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center gap-2 text-stone-500 text-[10px]">
-                <i data-lucide="rotate-ccw" class="w-2.5 h-2.5 text-stone-400"></i>
-                <span>テスト用サンプルに戻す</span>
               </button>
             </div>
           </div>
@@ -1005,33 +1009,6 @@
       shimpaku: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300"><defs><linearGradient id="bgs" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23f7f5ed"/><stop offset="100%" stop-color="%23e6decb"/></linearGradient></defs><rect width="400" height="300" fill="url(%23bgs)"/><ellipse cx="200" cy="265" rx="120" ry="7" fill="%23d3cab7"/><rect x="130" y="235" width="140" height="28" rx="4" fill="%235d4037"/><ellipse cx="200" cy="237" rx="68" ry="6" fill="%233e2723"/><path d="M190,237 C180,200 150,175 140,140 C130,105 160,85 190,75 C230,60 270,75 290,110 C310,145 290,195 240,210" stroke="%23eee9da" stroke-width="14" stroke-linecap="round" fill="none"/><path d="M192,237 C182,200 154,175 144,140 C134,105 164,85 192,75 C232,60 272,75 292,110 C312,145 292,195 242,210" stroke="%234a2e1b" stroke-width="6" stroke-linecap="round" fill="none"/><ellipse cx="130" cy="135" rx="30" ry="16" fill="%232d6a4f"/><ellipse cx="190" cy="70" rx="40" ry="20" fill="%232d6a4f"/><ellipse cx="290" cy="105" rx="35" ry="18" fill="%232d6a4f"/><ellipse cx="240" cy="205" rx="32" ry="16" fill="%231b4332"/><ellipse cx="235" cy="200" rx="24" ry="12" fill="%2340916c"/></svg>`
     };
 
-    const SAMPLE_BONSAI_DATA = [
-      {
-        id: "b-01",
-        name: "瑞祥（ずいしょう）",
-        speciesId: "kuromatsu",
-        speciesName: "黒松（クロマツ）",
-        category: "conifer",
-        style: "模様木",
-        pot: "萬古焼 楕円鉢 5号",
-        acquiredDate: "2021-04-10",
-        acquiredFrom: "上野グリーンクラブ春興展",
-        lastRepotDate: "2024-03-20",
-        soilFormula: "赤玉土6 : 桐生砂4（中粒）",
-        memo: "我が家の主木。立ち上がりの幹肌に深い亀甲状の荒れが見られる。芽切り後の二番芽管理が肝要。",
-        imageUrl: SVG_ART.kuromatsu,
-        timeline: [
-          {
-            id: "tl-01-1",
-            date: "2024-03-20",
-            type: "repot",
-            note: "春の植え替え実施。根鉢を3割ほど崩し、傷んだ黒根を整理。赤玉6桐生4で植え付け。",
-            imageUrl: SVG_ART.kuromatsu
-          }
-        ]
-      }
-    ];
-
     function safeCreateIcons() {
       if (window.lucide && typeof lucide.createIcons === 'function') {
         lucide.createIcons();
@@ -1059,16 +1036,28 @@
       }, 3500);
     }
 
-    function showConfirmDialog(title, message, onConfirm) {
+    function showConfirmDialog(title, message, onConfirm, okText = '実行する', isDanger = true) {
       const modal = document.getElementById('confirmModal');
       const titleEl = document.getElementById('confirmTitle');
       const msgEl = document.getElementById('confirmMessage');
       const okBtn = document.getElementById('confirmOkBtn');
       const cancelBtn = document.getElementById('confirmCancelBtn');
+      const iconBox = document.getElementById('confirmIconBox');
 
       if (!modal) return;
       if (titleEl) titleEl.textContent = title;
       if (msgEl) msgEl.textContent = message;
+
+      if (okBtn) {
+        okBtn.textContent = okText;
+        if (isDanger) {
+          okBtn.className = "px-4 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-md shadow-rose-600/20";
+          if (iconBox) iconBox.className = "w-10 h-10 mx-auto mb-2.5 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center";
+        } else {
+          okBtn.className = "px-4 py-1.5 rounded-lg bg-tokiwa text-white font-bold hover:bg-tokiwa-light transition shadow-md shadow-tokiwa/20";
+          if (iconBox) iconBox.className = "w-10 h-10 mx-auto mb-2.5 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center";
+        }
+      }
 
       const handleOk = () => {
         modal.classList.add('hidden');
@@ -2125,6 +2114,119 @@
       pushToGoogleSheet();
     }
 
+    // スプレッドシートの1セル50,000文字上限エラーを防ぐための安全サニタイズ関数
+    function sanitizeForSpreadsheet(list) {
+      if (!Array.isArray(list)) return [];
+      return list.map(item => {
+        const copy = JSON.parse(JSON.stringify(item));
+        // Base64が残っていて極端に長い場合、50,000文字制限でGASがクラッシュするのを防止
+        if (copy.imageUrl && copy.imageUrl.startsWith('data:image') && copy.imageUrl.length > 20000) {
+          copy.imageUrl = "local_stored_photo";
+        }
+        if (Array.isArray(copy.timeline)) {
+          copy.timeline = copy.timeline.map(tl => {
+            if (tl.imageUrl && tl.imageUrl.startsWith('data:image') && tl.imageUrl.length > 20000) {
+              tl.imageUrl = "local_stored_photo";
+            }
+            return tl;
+          });
+        }
+        return copy;
+      });
+    }
+
+    async function pushToGoogleSheet() {
+      const gasUrl = getGasWebAppUrl();
+      if (!gasUrl) return false;
+
+      try {
+        const safeBonsai = sanitizeForSpreadsheet(inMemoryBonsaiList || []);
+        const safeSpecies = sanitizeForSpreadsheet(inMemorySpeciesList || []);
+
+        const payload = {
+          action: 'syncAll',
+          bonsai: safeBonsai,
+          species: safeSpecies
+        };
+
+        const response = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+        const resJson = await response.json();
+        const ok = resJson && resJson.status === 'success';
+        if (ok) {
+          isSheetConnected = true;
+          updateCloudStatusUI(true);
+        }
+        return ok;
+      } catch (err) {
+        console.warn("Push to Google Sheet skipped/failed:", err);
+        return false;
+      }
+    }
+
+    function pushToGoogleSheetWithFeedback() {
+      const count = (inMemoryBonsaiList || []).length;
+      showConfirmDialog(
+        'スプレッドシートへ送信の確認',
+        `手元の愛樹データ（${count}鉢）をスプレッドシートへ送信します。スプレッドシート側の内容は手元のデータで更新されますが、よろしいですか？`,
+        async () => {
+          showToast('スプレッドシートへ送信中...', 'refresh-cw');
+          const ok = await pushToGoogleSheet();
+          if (ok) {
+            showToast('手元の愛樹データをスプレッドシートへ保存しました！');
+          } else {
+            showToast('送信に失敗しました。接続をご確認ください', 'alert-circle');
+          }
+        },
+        '送信する',
+        false
+      );
+    }
+
+    function pullFromGoogleSheet() {
+      showConfirmDialog(
+        'スプレッドシートから読み込みの確認',
+        'スプレッドシートの最新データを手元へ読み込みます。手元の画面上のデータはスプレッドシートの内容で置き換わりますが、よろしいですか？',
+        async () => {
+          showToast('スプレッドシートから読み込み中...', 'refresh-cw');
+          const gasUrl = getGasWebAppUrl();
+          if (!gasUrl) {
+            showToast('連携URLが未登録です', 'alert-circle');
+            return;
+          }
+
+          try {
+            const response = await fetch(gasUrl, { method: 'GET' });
+            const data = await response.json();
+            if (data && data.status === 'success') {
+              inMemoryBonsaiList = Array.isArray(data.bonsai) ? data.bonsai : [];
+              if (Array.isArray(data.species) && data.species.length > 0) {
+                inMemorySpeciesList = data.species;
+              }
+              persistToLocalStorage();
+              updateSummaryStats();
+              renderBonsaiList();
+              renderDedicatedGantt();
+              renderSpeciesCatalog();
+              showToast(`スプレッドシートから読み込みました（${inMemoryBonsaiList.length}鉢）`);
+              isSheetConnected = true;
+              updateCloudStatusUI(true);
+            } else {
+              showToast('データの取得に失敗しました', 'alert-circle');
+            }
+          } catch (err) {
+            showToast('通信エラーが発生しました', 'alert-circle');
+          }
+        },
+        '読み込む',
+        true
+      );
+    }
+
+    // 双方向スマート同期（今すぐ同期ボタン）
     async function syncWithGoogleSheet(showFeedback = true) {
       const gasUrl = getGasWebAppUrl();
       if (!gasUrl) {
@@ -2136,11 +2238,47 @@
         return;
       }
 
+      // 手動で同期ボタンを押した場合は確認ダイアログを挟む
+      if (showFeedback) {
+        const count = (inMemoryBonsaiList || []).length;
+        const msg = count > 0
+          ? `手元の愛樹データ（${count}鉢）をスプレッドシートへ送信・同期します。よろしいですか？`
+          : 'スプレッドシートと最新データを同期します。よろしいですか？';
+
+        showConfirmDialog(
+          'スプレッドシート同期の確認',
+          msg,
+          () => executeSyncWithGoogleSheet(gasUrl, true),
+          '同期する',
+          false
+        );
+        return;
+      }
+
+      // 起動時などの自動同期は確認ポップアップなしで静かに実行
+      await executeSyncWithGoogleSheet(gasUrl, false);
+    }
+
+    async function executeSyncWithGoogleSheet(gasUrl, showFeedback) {
       if (isSyncing) return;
       isSyncing = true;
       if (showFeedback) showToast('スプレッドシートと同期中...', 'refresh-cw');
 
       try {
+        const localList = inMemoryBonsaiList || [];
+
+        // 手元に盆栽がある場合は、まず手元の内容をスプレッドシートへ送信（保存）
+        if (localList.length > 0) {
+          const pushOk = await pushToGoogleSheet();
+          if (pushOk) {
+            if (showFeedback) showToast(`スプレッドシートに保存・同期完了（${localList.length}鉢）！`);
+            isSheetConnected = true;
+            updateCloudStatusUI(true);
+            return;
+          }
+        }
+
+        // 手元が0件の場合、スプレッドシート側に登録があるか問い合わせて取得
         const response = await fetch(gasUrl, { method: 'GET' });
         const text = await response.text();
         let data;
@@ -2153,17 +2291,10 @@
         if (data.status === 'success') {
           const remoteBonsai = Array.isArray(data.bonsai) ? data.bonsai : [];
           const remoteSpecies = Array.isArray(data.species) ? data.species : [];
-          const localBonsai = inMemoryBonsaiList || [];
 
-          if (remoteBonsai.length === 0 && localBonsai.length > 0) {
-            await pushToGoogleSheet();
-            if (showFeedback) showToast(`手元の愛樹（${localBonsai.length}鉢）をスプレッドシートに保存・同期しました！`);
-          } else {
-            inMemoryBonsaiList = remoteBonsai;
-            if (remoteSpecies.length > 0) {
-              inMemorySpeciesList = remoteSpecies;
-            }
-            if (showFeedback) showToast('スプレッドシートと同期完了！');
+          inMemoryBonsaiList = remoteBonsai;
+          if (remoteSpecies.length > 0) {
+            inMemorySpeciesList = remoteSpecies;
           }
 
           persistToLocalStorage();
@@ -2183,6 +2314,7 @@
 
           isSheetConnected = true;
           updateCloudStatusUI(true);
+          if (showFeedback) showToast('スプレッドシートと同期完了！');
         } else {
           throw new Error(data.message || '同期エラー');
         }
@@ -2200,30 +2332,6 @@
         if (showFeedback) showToast(errMsg, 'alert-circle');
       } finally {
         isSyncing = false;
-      }
-    }
-
-    async function pushToGoogleSheet() {
-      const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) return false;
-
-      try {
-        const payload = {
-          action: 'syncAll',
-          bonsai: inMemoryBonsaiList || [],
-          species: inMemorySpeciesList || []
-        };
-
-        const response = await fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        });
-        const resJson = await response.json();
-        return resJson && resJson.status === 'success';
-      } catch (err) {
-        console.warn("Push to Google Sheet skipped/failed:", err);
-        return false;
       }
     }
 
@@ -2472,24 +2580,6 @@
       reader.readAsText(file);
     }
 
-    function resetToSampleData() {
-      showConfirmDialog(
-        'テストサンプルの読込',
-        '動作テスト用のサンプル盆栽データを読み込みますか？（※現在の台帳は上書きされます）',
-        async () => {
-          inMemoryBonsaiList = JSON.parse(JSON.stringify(SAMPLE_BONSAI_DATA));
-          inMemorySpeciesList = JSON.parse(JSON.stringify(DEFAULT_SPECIES));
-          persistToLocalStorage();
-          updateSummaryStats();
-          renderBonsaiList();
-          renderDedicatedGantt();
-          renderSpeciesCatalog();
-          showToast('サンプルデータを読み込みました');
-          await pushToGoogleSheet();
-        }
-      );
-    }
-
     window.switchTab = switchTab;
     window.toggleRepotFilter = toggleRepotFilter;
     window.setCategoryFilter = setCategoryFilter;
@@ -2519,12 +2609,13 @@
     window.toggleDataMenu = toggleDataMenu;
     window.exportData = exportData;
     window.importData = importData;
-    window.resetToSampleData = resetToSampleData;
     window.openSyncGuideModal = openSyncGuideModal;
     window.closeSyncGuideModal = closeSyncGuideModal;
     window.saveAndSyncGasConfig = saveAndSyncGasConfig;
     window.clearGasConfig = clearGasConfig;
     window.syncWithGoogleSheet = syncWithGoogleSheet;
+    window.pushToGoogleSheetWithFeedback = pushToGoogleSheetWithFeedback;
+    window.pullFromGoogleSheet = pullFromGoogleSheet;
     window.setAsAppBackground = setAsAppBackground;
     window.removeCustomBackground = removeCustomBackground;
 
