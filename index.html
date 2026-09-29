@@ -1374,21 +1374,34 @@
     }
 
     /**
-     * 超軽量ポーリング（相手の更新検知）
+     * 超軽量ポーリング（相手の更新検知・キャッシュバスター付き）
      */
     async function checkRemoteUpdate() {
       const gasUrl = getGasWebAppUrl();
       if (!gasUrl || isSyncing) return;
 
       try {
-        const response = await fetch(`${gasUrl}?action=getLatestTimestamp`, { method: 'GET' });
+        // キャッシュによるすれ違いを防ぐため _t パラメータを付加
+        const cacheBuster = `_t=${Date.now()}`;
+        const sep = gasUrl.includes('?') ? '&' : '?';
+        const response = await fetch(`${gasUrl}${sep}action=getLatestTimestamp&${cacheBuster}`, { method: 'GET' });
         const resJson = await response.json();
 
         if (resJson && resJson.status === 'success' && resJson.lastModified) {
           const remoteTimeStr = String(resJson.lastModified);
           const localKnownTimeStr = localStorage.getItem(STORAGE_KEY_LAST_TIMESTAMP) || '';
 
-          if (localKnownTimeStr && remoteTimeStr > localKnownTimeStr) {
+          // 初回起動時は基準時刻として保存
+          if (!localKnownTimeStr) {
+            localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, remoteTimeStr);
+            return;
+          }
+
+          const remoteTime = new Date(remoteTimeStr).getTime();
+          const localTime = new Date(localKnownTimeStr).getTime();
+
+          // リモートが手元の時刻より新しい場合に通知バーを表示
+          if (!isNaN(remoteTime) && !isNaN(localTime) && remoteTime > localTime) {
             cachedLatestRemoteTimestamp = remoteTimeStr;
             showPartnerUpdateBanner(remoteTimeStr);
           }
@@ -2397,7 +2410,7 @@
         async () => {
           showToast('Googleドライブの写真とシートデータを削除中...', 'trash-2');
 
-          // 関連するすべての画像URLを抽出（メイン写真 + タイムライン写真）
+          // 関連するすべての画像URLを抽出
           const imageUrlsToDelete = [];
           if (b.imageUrl && b.imageUrl.startsWith('http')) {
             imageUrlsToDelete.push(b.imageUrl);
@@ -2410,10 +2423,10 @@
             });
           }
 
-          // GASへ削除リクエスト送信（3重追跡でドライブ画像ゴミ箱移動 ＆ シート行削除）
+          // GASへ削除リクエスト送信（行削除 ＆ meta更新が優先実行される）
           const result = await deleteBonsaiFromRemote(targetId, imageUrlsToDelete);
 
-          // 手元から削除
+          // 手元からも削除して画面を最新化
           inMemoryBonsaiList = inMemoryBonsaiList.filter(item => item.id !== targetId);
           persistToLocalStorage();
           updateSummaryStats();
@@ -2424,7 +2437,7 @@
             const countMsg = result.deletedCount > 0 ? `（ドライブ写真 ${result.deletedCount}枚を消去）` : '';
             showToast(`「${b.name}」を削除しました${countMsg}`);
           } else {
-            showToast(`「${b.name}」を削除しました`);
+            showToast(`「${b.name}」を手元から削除しました`);
           }
         }
       );
@@ -2781,7 +2794,7 @@
     }
 
     /**
-     * スプレッドシートから読み込み（相手の追加・削除を手元に完全同期）
+     * スプレッドシートから読み込み（相手の追加・削除を手元に完全同期・受信専用）
      */
     async function pullFromGoogleSheet(showConfirm = true) {
       const executePull = async () => {
@@ -2793,12 +2806,16 @@
         }
 
         try {
-          const response = await fetch(gasUrl, { method: 'GET' });
+          // ブラウザのキャッシュを防止して常に最新の原本を取得
+          const cacheBuster = `_t=${Date.now()}`;
+          const sep = gasUrl.includes('?') ? '&' : '?';
+          const response = await fetch(`${gasUrl}${sep}${cacheBuster}`, { method: 'GET' });
           const data = await response.json();
+
           if (data && data.status === 'success') {
             const remoteBonsai = Array.isArray(data.bonsai) ? data.bonsai : [];
             
-            // スプレッドシートの原本を手元に完全適用（相手が削除したものは手元からも消える）
+            // スプレッドシートの原本を手元に完全適用（相手が削除したものは確実に消去）
             inMemoryBonsaiList = remoteBonsai;
 
             if (Array.isArray(data.species) && data.species.length > 0) {
@@ -2852,7 +2869,7 @@
       if (showFeedback) {
         showConfirmDialog(
           'スプレッドシート同期の確認',
-          'スプレッドシートと最新データを同期します。よろしいですか？',
+          'スプレッドシートの最新データを手元へ取り込みます。よろしいですか？',
           () => executeSyncWithGoogleSheet(gasUrl, true),
           '同期する',
           false
@@ -2869,7 +2886,10 @@
       if (showFeedback) showToast('スプレッドシートと同期中...', 'refresh-cw');
 
       try {
-        const response = await fetch(gasUrl, { method: 'GET' });
+        // キャッシュバスター付きGETで常に生データを取得
+        const cacheBuster = `_t=${Date.now()}`;
+        const sep = gasUrl.includes('?') ? '&' : '?';
+        const response = await fetch(`${gasUrl}${sep}${cacheBuster}`, { method: 'GET' });
         const text = await response.text();
         let data;
         try {
@@ -2882,6 +2902,7 @@
           const remoteBonsai = Array.isArray(data.bonsai) ? data.bonsai : [];
           const remoteSpecies = Array.isArray(data.species) ? data.species : [];
 
+          // スプレッドシート原本を手元に完全反映（手元からの逆流送信は絶対に行わない）
           inMemoryBonsaiList = remoteBonsai;
           if (remoteSpecies.length > 0) {
             inMemorySpeciesList = remoteSpecies;
