@@ -3,9 +3,12 @@
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
   <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>盆栽手帖 - 愛樹台帳と年間手入れガントチャート</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>盆栽手帖 - ふたりの愛樹台帳 ＆ 栽培管理</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -66,14 +69,9 @@
     .washi-shadow-hover:hover {
       box-shadow: 0 12px 28px -4px rgba(27, 67, 50, 0.12), 0 4px 10px -2px rgba(40, 35, 30, 0.06);
     }
-    .frosted-glass {
-      background-color: rgba(252, 251, 248, 0.75) !important;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
     ::-webkit-scrollbar {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
     }
     ::-webkit-scrollbar-track {
       background: #eeeae0;
@@ -135,6 +133,13 @@
       will-change: transform;
     }
 
+    details > summary {
+      list-style: none;
+    }
+    details > summary::-webkit-details-marker {
+      display: none;
+    }
+
     @media screen and (max-width: 768px) {
       input[type="text"],
       input[type="date"],
@@ -192,25 +197,35 @@
               <h1 class="font-mincho text-sm sm:text-base font-bold tracking-wider text-tokiwa-dark">盆栽手帖</h1>
               <span class="text-[8.5px] tracking-widest px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">愛樹管理</span>
             </div>
-            <p class="text-[9px] text-stone-500 font-light hidden sm:block">愛樹台帳 ＆ 年間栽培ガントチャート</p>
+            <div class="flex items-center gap-1">
+              <span id="headerUserName" class="text-[9px] text-tokiwa font-bold">編集者: 読み込み中...</span>
+              <button onclick="openUserNameModal()" class="text-[8.5px] text-stone-400 hover:text-tokiwa underline ml-1">変更</button>
+            </div>
           </div>
         </div>
 
         <div class="flex items-center gap-1 sm:gap-2">
           <button id="headerAlertBtn" onclick="toggleRepotFilter()" class="hidden items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 transition shadow-sm" title="2年以上植え替えていない盆栽を表示">
             <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i>
-            <span class="hidden md:inline">植替検討期:</span>
+            <span class="hidden md:inline">植替期:</span>
             <span id="headerAlertCount" class="font-bold text-amber-700">0鉢</span>
           </button>
 
-          <!-- スプレッドシート連携・同期ステータスボタン -->
-          <button id="syncStatusBadge" onclick="syncWithGoogleSheet(true)" class="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-300 shadow-sm hover:bg-stone-200 active:scale-95 transition cursor-pointer" title="クリックしてスプレッドシートと今すぐ同期">
+          <!-- 削除履歴（復元）ボタン -->
+          <button onclick="openDeletedHistoryModal()" class="flex items-center gap-1 px-2 py-1 rounded-lg text-[9.5px] sm:text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-300 hover:bg-stone-200 hover:text-stone-900 transition shadow-sm" title="削除された盆栽を確認・復元">
+            <i data-lucide="history" class="w-3 h-3 text-stone-500"></i>
+            <span class="hidden sm:inline">削除履歴</span>
+            <span id="headerDeletedBadge" class="hidden text-[8px] px-1 rounded-full bg-rose-500 text-white font-bold">0</span>
+          </button>
+
+          <!-- スプレッドシート同期ステータスボタン -->
+          <button id="syncStatusBadge" onclick="syncWithGoogleSheet(true)" class="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-300 shadow-sm hover:bg-stone-200 active:scale-95 transition cursor-pointer" title="クリックして手動同期">
             <span id="syncStatusDot" class="relative flex h-2 w-2">
               <span id="syncPingAnim" class="hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span id="syncDotBg" class="relative inline-flex rounded-full h-2 w-2 bg-stone-400"></span>
             </span>
-            <span class="hidden sm:inline">シート共有:</span>
-            <span id="syncStatusText" class="font-bold">未接続</span>
+            <span class="hidden sm:inline">シート:</span>
+            <span id="syncStatusText" class="font-bold">確認中</span>
             <i data-lucide="refresh-cw" class="w-2.5 h-2.5 text-stone-500 ml-0.5"></i>
           </button>
 
@@ -220,20 +235,33 @@
           </button>
 
           <div class="relative">
-            <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="データバックアップ・管理メニュー">
+            <button onclick="toggleDataMenu()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="設定・管理メニュー">
               <i data-lucide="settings" class="w-3.5 h-3.5"></i>
             </button>
             <div id="dataMenu" class="hidden absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-stone-200/90 py-2.5 z-50 text-[11px] font-medium overflow-y-auto max-h-[85vh] divide-y divide-stone-100">
-              <div class="px-3.5 py-1">
+              <div class="px-3.5 py-1.5">
+                <span class="text-[9.5px] font-bold text-stone-400 tracking-wider uppercase">編集者・アカウント</span>
+                <div class="mt-1 flex items-center justify-between p-2 rounded-xl bg-stone-50 border border-stone-200">
+                  <div>
+                    <span class="text-[9px] text-stone-400 block">現在のお名前</span>
+                    <span id="menuUserName" class="font-bold text-tokiwa-dark text-[11px]">未設定</span>
+                  </div>
+                  <button onclick="openUserNameModal(); toggleDataMenu();" class="px-2.5 py-1 rounded-lg bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 text-[10px] font-semibold shadow-xs">
+                    名前を変更
+                  </button>
+                </div>
+              </div>
+
+              <div class="px-3.5 py-1.5">
                 <span class="text-[9.5px] font-bold text-stone-400 tracking-wider uppercase">共同管理・クラウド操作</span>
                 <div class="mt-1 space-y-1">
-                  <button onclick="pushToGoogleSheetWithFeedback(); toggleDataMenu();" class="w-full text-left px-2.5 py-2 rounded-xl hover:bg-emerald-50/80 active:bg-emerald-100/70 transition flex items-start gap-2.5 text-emerald-900 group">
-                    <span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200 transition shrink-0 mt-0.5">
-                      <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                  <button onclick="openDeletedHistoryModal(); toggleDataMenu();" class="w-full text-left px-2.5 py-2 rounded-xl hover:bg-rose-50/80 active:bg-rose-100/70 transition flex items-start gap-2.5 text-rose-900 group">
+                    <span class="p-1.5 rounded-lg bg-rose-100 text-rose-700 group-hover:bg-rose-200 transition shrink-0 mt-0.5">
+                      <i data-lucide="history" class="w-3.5 h-3.5"></i>
                     </span>
                     <div>
-                      <span class="font-bold block text-[11px] text-emerald-950">手元の愛樹データをシートへ送信</span>
-                      <span class="text-[9px] text-stone-500 block leading-tight mt-0.5">手元の最新台帳をスプレッドシートへ安全保存</span>
+                      <span class="font-bold block text-[11px] text-rose-950">削除履歴の確認 ＆ 復元</span>
+                      <span class="text-[9px] text-stone-500 block leading-tight mt-0.5">万が一削除した愛樹を写真ごと完全に元に戻す</span>
                     </div>
                   </button>
                   <button onclick="pullFromGoogleSheet(); toggleDataMenu();" class="w-full text-left px-2.5 py-2 rounded-xl hover:bg-sky-50/80 active:bg-sky-100/70 transition flex items-start gap-2.5 text-sky-900 group">
@@ -241,15 +269,11 @@
                       <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
                     </span>
                     <div>
-                      <span class="font-bold block text-[11px] text-sky-950">シートから最新データを読み込み</span>
-                      <span class="text-[9px] text-stone-500 block leading-tight mt-0.5">お相手の最新の追加・削除を手元に完全同期</span>
+                      <span class="font-bold block text-[11px] text-sky-950">シートから最新データを再取得</span>
+                      <span class="text-[9px] text-stone-500 block leading-tight mt-0.5">お相手の最新作業を手元に確実反映</span>
                     </div>
                   </button>
-                  <button onclick="checkAndSyncDriveImages(); toggleDataMenu();" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-indigo-50/80 active:bg-indigo-100/70 transition flex items-center gap-2 text-indigo-900">
-                    <i data-lucide="images" class="w-3.5 h-3.5 text-indigo-600"></i>
-                    <span class="font-semibold">📸 ドライブ画像枚数照合 ＆ 一括同期</span>
-                  </button>
-                  <button onclick="openSyncGuideModal(); toggleDataMenu();" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-stone-100 active:bg-stone-200/60 transition flex items-center gap-2 text-stone-700">
+                  <button onclick="openSyncGuideModal(); toggleDataMenu();" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-stone-100 transition flex items-center gap-2 text-stone-700">
                     <i data-lucide="table-2" class="w-3.5 h-3.5 text-stone-500"></i>
                     <span>連携設定を確認・変更</span>
                   </button>
@@ -267,11 +291,6 @@
                     <span id="bgOpacityValueText" class="font-mono text-tokiwa font-bold text-[10.5px]">22%</span>
                   </div>
                   <input type="range" id="bgOpacitySlider" min="5" max="60" step="1" value="22" oninput="handleBgOpacityChange(this.value)" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-tokiwa">
-                  <div class="flex justify-between text-[8px] text-stone-500 font-medium">
-                    <span>うっすら (5%)</span>
-                    <span>標準 (22%)</span>
-                    <span>くっきり (60%)</span>
-                  </div>
                 </div>
 
                 <div class="space-y-1">
@@ -307,10 +326,6 @@
                   <span>データ復元 (JSON)</span>
                   <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importData(event)">
                 </label>
-                <button onclick="clearAllBonsaiData()" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-rose-50 transition flex items-center gap-2 text-rose-700 mt-1">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
-                  <span>台帳を完全に空にする（0件クリア）</span>
-                </button>
               </div>
             </div>
           </div>
@@ -410,7 +425,7 @@
           <i data-lucide="sprout" class="w-6 h-6"></i>
         </div>
         <h3 class="font-mincho text-base font-bold text-stone-700">登録されている愛樹がありません</h3>
-        <p class="text-[10px] text-stone-500 mt-1">右上の「盆栽を登録」または「盆栽樹種図鑑」から愛樹を追加してください。</p>
+        <p class="text-[10px] text-stone-500 mt-1">「盆栽を登録」または「削除履歴」から愛樹を追加・復元してください。</p>
         <button onclick="openNewBonsaiModal()" class="mt-3 px-3.5 py-1.5 bg-tokiwa text-white text-[10.5px] font-semibold rounded-lg hover:bg-tokiwa-light transition">＋ 最初の盆栽を登録する</button>
       </div>
     </section>
@@ -468,12 +483,12 @@
       <div class="flex items-center gap-1.5">
         <i data-lucide="sprout" class="w-3.5 h-3.5 text-tokiwa"></i>
         <span class="font-mincho font-bold text-stone-700">盆栽手帖</span>
-        <span>— 愛樹の健やかな成長と共に</span>
+        <span>— ふたりの愛樹共同管理（記録保持 ＆ 安全復元対応）</span>
       </div>
       <div class="flex items-center gap-2 text-[9.5px] text-stone-400">
-        <span>個別更新 ＆ ドライブ写真自動消去対応</span>
+        <span id="displayFooterUser">編集者: 読込中...</span>
         <span>•</span>
-        <span id="displayUserId" class="font-mono text-stone-400">連携確認中</span>
+        <span>削除履歴からの復元対応</span>
       </div>
     </div>
   </footer>
@@ -498,7 +513,7 @@
           <button onclick="openEditBonsaiModal()" class="p-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition" title="基本情報を編集">
             <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
           </button>
-          <button onclick="confirmDeleteBonsai()" class="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition" title="台帳から削除">
+          <button onclick="confirmDeleteBonsai()" class="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition" title="台帳から削除（削除履歴へ移動）">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           </button>
           <button onclick="closeCarteModal()" class="p-1 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-200/60 transition">
@@ -537,9 +552,12 @@
           </div>
 
           <div class="md:col-span-7 bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-2">
-            <h3 class="font-mincho font-bold text-[11px] text-tokiwa border-b border-stone-100 pb-1 flex items-center gap-1.5">
-              <i data-lucide="clipboard-list" class="w-3 h-3"></i> 基本台帳情報
-            </h3>
+            <div class="flex items-center justify-between border-b border-stone-100 pb-1">
+              <h3 class="font-mincho font-bold text-[11px] text-tokiwa flex items-center gap-1.5">
+                <i data-lucide="clipboard-list" class="w-3 h-3"></i> 基本台帳情報
+              </h3>
+              <span id="carteLastEditorBadge" class="text-[9px] text-stone-400 bg-stone-100 px-1.5 py-0.2 rounded font-medium">最終更新: -</span>
+            </div>
             <div class="grid grid-cols-2 gap-2 text-[10px]">
               <div>
                 <span class="text-stone-400 block text-[9px]">樹形</span>
@@ -570,11 +588,25 @@
                 </p>
               </div>
               <div class="col-span-2" id="carteMemoSection">
-                <span class="text-stone-400 block text-[9px]">管理メモ</span>
-                <p id="carteMemo" class="text-stone-600 mt-0.5 text-[9.5px] whitespace-pre-wrap leading-relaxed"></p>
+                <span class="text-stone-400 block text-[9px]">管理メモ（お互いの追記をすべて保持）</span>
+                <p id="carteMemo" class="text-stone-700 mt-0.5 text-[9.5px] whitespace-pre-wrap leading-relaxed bg-stone-50 p-2 rounded border border-stone-200"></p>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- 編集履歴アコーディオン -->
+        <div class="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm">
+          <details class="group">
+            <summary class="flex items-center justify-between cursor-pointer p-3 bg-stone-50/80 hover:bg-stone-100/70 transition">
+              <span class="flex items-center gap-1.5 font-bold text-stone-700 text-[10.5px]">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-tokiwa"></i>
+                <span>この鉢の編集履歴（誰が何を変更したか）</span>
+              </span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-stone-400 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div id="carteHistoryList" class="p-3 space-y-2 border-t border-stone-200 max-h-48 overflow-y-auto"></div>
+          </details>
         </div>
 
         <div class="bg-white p-3 sm:p-4 rounded-xl border border-stone-200 shadow-sm">
@@ -594,7 +626,7 @@
               <h3 class="font-mincho font-bold text-[11px] text-tokiwa-dark flex items-center gap-1.5">
                 <i data-lucide="history" class="w-3 h-3"></i> 手入れ・成長タイムライン
               </h3>
-              <p class="text-[9.5px] text-stone-500 mt-0.5">鉢替え、剪定、芽切り、観察記録を写真と共に蓄積できます。</p>
+              <p class="text-[9.5px] text-stone-500 mt-0.5">おふたりが記録した作業・写真が時系列で合体保存されます。</p>
             </div>
             <button onclick="openAddTimelineModal()" class="flex items-center gap-1 px-2 py-1 bg-tokiwa text-white text-[9.5px] font-bold rounded-lg hover:bg-tokiwa-light transition shadow-sm">
               <i data-lucide="plus" class="w-3 h-3"></i>
@@ -690,7 +722,6 @@
           <div>
             <label class="block font-bold text-stone-700 mb-1">前回の植え替え日 <span class="text-amber-700">（植替判定基準）</span></label>
             <input type="date" id="formLastRepotDate" class="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none bg-white">
-            <span class="text-[9px] text-stone-400">※未入力時は入手日が基準になります。</span>
           </div>
         </div>
 
@@ -700,8 +731,8 @@
         </div>
 
         <div>
-          <label class="block font-bold text-stone-700 mb-1">備考・由来・愛樹のメモ</label>
-          <textarea id="formMemo" rows="2" placeholder="樹の性格や過去の病気履歴、今後の構想など" class="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none bg-white"></textarea>
+          <label class="block font-bold text-stone-700 mb-1">備考・由来・愛樹のメモ（お互いの追記は保持されます）</label>
+          <textarea id="formMemo" rows="2.5" placeholder="樹の性格や過去の病気履歴、今後の構想など" class="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none bg-white"></textarea>
         </div>
 
         <div class="pt-3 border-t border-stone-200 flex justify-end gap-2">
@@ -756,7 +787,7 @@
         </div>
 
         <div>
-          <label class="block font-bold text-stone-700 mb-1">作業写真・ビフォーアフター（任意）</label>
+          <label class="block font-bold text-stone-700 mb-1">作業写真（任意）</label>
           <div class="flex items-center gap-3">
             <div id="timelineImagePreviewContainer" class="w-16 h-16 rounded-xl border border-stone-300 bg-stone-100 flex items-center justify-center overflow-hidden shrink-0 relative">
               <img id="timelineImagePreview" src="" class="hidden w-full h-full object-cover">
@@ -764,7 +795,7 @@
             </div>
             <div class="flex-1">
               <input type="file" id="timelineImageFile" accept="image/*" onchange="handleTimelineImageUpload(event)" class="block w-full text-[10px] text-stone-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-tokiwa/10 file:text-tokiwa hover:file:bg-tokiwa/20 cursor-pointer">
-              <p class="text-[9px] text-stone-400 mt-1">※自動で幅900pxにリサイズ圧縮されます。</p>
+              <p class="text-[9px] text-stone-400 mt-1">※自動で幅900pxに圧縮保存されます。</p>
             </div>
           </div>
           <input type="hidden" id="timelineImageData">
@@ -784,10 +815,73 @@
     </div>
   </div>
 
+  <!-- ★ 削除履歴モーダル（万が一の復元機能） -->
+  <div id="deletedHistoryModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-lg bg-washi-card rounded-2xl border border-stone-200 washi-shadow overflow-hidden max-h-[92vh] flex flex-col animate-fade-in text-[10.5px] sm:text-[11px]">
+      
+      <div class="p-3.5 border-b border-stone-200 bg-[#faf8f3] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="history" class="w-4 h-4 text-rose-600"></i>
+          <div>
+            <h3 class="font-mincho text-sm sm:text-base font-bold text-tokiwa-dark">削除履歴（安全保管庫）</h3>
+            <p class="text-[9px] text-stone-500">削除された愛樹はここに保管され、写真や記録を含めていつでも復元できます。</p>
+          </div>
+        </div>
+        <button onclick="closeDeletedHistoryModal()" class="p-1 text-stone-400 hover:text-stone-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3">
+        <div id="deletedHistoryListContainer" class="space-y-2.5"></div>
+      </div>
+
+      <div class="p-3 border-t border-stone-200 bg-[#faf8f3] flex items-center justify-between">
+        <button onclick="confirmClearAllDeletedHistory()" class="text-[9.5px] text-stone-400 hover:text-rose-600 underline">
+          履歴を完全に空にする
+        </button>
+        <button onclick="closeDeletedHistoryModal()" class="px-3.5 py-1.5 rounded-lg bg-stone-200 text-stone-700 hover:bg-stone-300 transition font-semibold">閉じる</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 編集者お名前設定モーダル -->
+  <div id="userNameModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-sm bg-white rounded-2xl border border-stone-200 washi-shadow p-5 text-center animate-fade-in text-[11px]">
+      <div class="w-10 h-10 mx-auto mb-2.5 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+        <i data-lucide="user" class="w-5 h-5"></i>
+      </div>
+      <h3 class="font-mincho text-base font-bold text-stone-800">あなたのお名前を設定</h3>
+      <p class="text-[10px] text-stone-500 mt-1 leading-relaxed">
+        手入れの記録や編集を行った際、どちらが作業したかがわかるように名前を記録します。
+      </p>
+      <input type="text" id="userNameInput" placeholder="例: 夫、妻、名前" class="mt-3.5 w-full px-3 py-2 text-center rounded-xl border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none font-bold text-sm bg-stone-50">
+      <div class="mt-4 flex gap-2">
+        <button onclick="closeUserNameModal()" class="flex-1 py-2 rounded-xl bg-stone-100 text-stone-600 font-semibold hover:bg-stone-200 transition">後で設定</button>
+        <button onclick="saveUserNameFromInput()" class="flex-1 py-2 rounded-xl bg-tokiwa text-white font-bold hover:bg-tokiwa-light transition shadow-md shadow-tokiwa/20">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認ダイアログモーダル -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-[70] overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-sm bg-white rounded-2xl border border-stone-200 washi-shadow p-5 text-center animate-fade-in text-[11px]">
+      <div id="confirmIconBox" class="w-10 h-10 mx-auto mb-2.5 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+      </div>
+      <h3 id="confirmTitle" class="font-mincho text-base font-bold text-stone-800">確認</h3>
+      <p id="confirmMessage" class="text-[10px] text-stone-500 mt-1.5 leading-relaxed">この操作を実行してもよろしいですか？</p>
+      <div class="mt-4 flex justify-center gap-2">
+        <button id="confirmCancelBtn" class="px-3.5 py-1.5 rounded-lg bg-stone-100 text-stone-700 font-semibold hover:bg-stone-200 transition">キャンセル</button>
+        <button id="confirmOkBtn" class="px-4 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-md shadow-rose-600/20">実行する</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 新規樹種を図鑑に追加モーダル -->
   <div id="speciesFormModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
     <div class="relative w-full max-w-lg bg-washi-card rounded-2xl border border-stone-200 washi-shadow overflow-hidden max-h-[92vh] flex flex-col animate-fade-in text-[10.5px] sm:text-[11px]">
-      
       <div class="p-3.5 border-b border-stone-200 bg-[#faf8f3] flex items-center justify-between">
         <div class="flex items-center gap-2">
           <i data-lucide="book-plus" class="w-4 h-4 text-tokiwa"></i>
@@ -814,149 +908,27 @@
             </select>
           </div>
         </div>
-
-        <div>
-          <label class="block font-bold text-stone-700 mb-1">樹種の写真・イラスト（任意）</label>
-          <div class="flex items-center gap-3">
-            <div id="spImagePreviewContainer" class="w-16 h-16 rounded-xl border border-stone-300 bg-stone-100 flex items-center justify-center overflow-hidden shrink-0 relative">
-              <img id="spImagePreview" src="" class="hidden w-full h-full object-cover">
-              <span id="spImagePlaceholder" class="text-stone-400 text-[9px]">写真なし</span>
-            </div>
-            <div class="flex-1">
-              <input type="file" id="spImageFile" accept="image/*" onchange="handleSpeciesImageUpload(event)" class="block w-full text-[10px] text-stone-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-tokiwa/10 file:text-tokiwa hover:file:bg-tokiwa/20 cursor-pointer">
-              <p class="text-[9px] text-stone-400 mt-1">※自動で幅900pxに圧縮保存されます。</p>
-            </div>
-          </div>
-          <input type="hidden" id="spImageData">
-        </div>
-
         <div>
           <label class="block font-bold text-stone-700 mb-1">推奨用土の配合</label>
           <input type="text" id="spSoil" placeholder="例: 赤玉土6 : 桐生砂4" class="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none bg-white">
         </div>
-
         <div>
           <label class="block font-bold text-stone-700 mb-1">特徴・解説 <span class="text-rose-500">*</span></label>
           <textarea id="spDesc" required rows="2" placeholder="樹の特徴や性質、鑑賞のポイント" class="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none bg-white"></textarea>
         </div>
-
         <div>
           <label class="block font-bold text-stone-700 mb-1">四季の見どころ</label>
           <input type="text" id="spHighlights" placeholder="春の新芽、初夏の花、錦秋の紅葉など" class="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 focus:ring-1.5 focus:ring-tokiwa focus:outline-none bg-white">
         </div>
-
-        <div class="p-2.5 bg-stone-50 rounded-xl border border-stone-200">
-          <span class="font-bold text-stone-700 block mb-1">適期スケジュール設定（開始月〜終了月）</span>
-          <div class="grid grid-cols-2 gap-2 text-[10px]">
-            <div>
-              <span class="text-stone-500">植え替え適期:</span>
-              <div class="flex items-center gap-1 mt-0.5">
-                <input type="number" id="spRepotStart" min="1" max="12" value="3" class="w-10 px-1 py-0.5 rounded border border-stone-300 text-center">月 〜
-                <input type="number" id="spRepotEnd" min="1" max="12" value="4" class="w-10 px-1 py-0.5 rounded border border-stone-300 text-center">月
-              </div>
-            </div>
-            <div>
-              <span class="text-stone-500">剪定適期:</span>
-              <div class="flex items-center gap-1 mt-0.5">
-                <input type="number" id="spPruneStart" min="1" max="12" value="5" class="w-10 px-1 py-0.5 rounded border border-stone-300 text-center">月 〜
-                <input type="number" id="spPruneEnd" min="1" max="12" value="6" class="w-10 px-1 py-0.5 rounded border border-stone-300 text-center">月
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="pt-3 border-t border-stone-200 flex justify-end gap-2">
           <button type="button" onclick="closeSpeciesFormModal()" class="px-3.5 py-1.5 rounded-lg bg-stone-200 text-stone-700 hover:bg-stone-300 transition font-semibold">キャンセル</button>
           <button type="submit" class="px-4 py-1.5 rounded-lg bg-tokiwa text-white hover:bg-tokiwa-light transition font-bold shadow-md shadow-tokiwa/20">図鑑に登録</button>
         </div>
       </form>
-
     </div>
   </div>
 
-  <!-- 確認ダイアログモーダル -->
-  <div id="confirmModal" class="hidden fixed inset-0 z-[70] overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
-    <div class="relative w-full max-w-sm bg-white rounded-2xl border border-stone-200 washi-shadow p-5 text-center animate-fade-in text-[11px]">
-      <div id="confirmIconBox" class="w-10 h-10 mx-auto mb-2.5 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
-        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-      </div>
-      <h3 id="confirmTitle" class="font-mincho text-base font-bold text-stone-800">確認</h3>
-      <p id="confirmMessage" class="text-[10px] text-stone-500 mt-1.5 leading-relaxed">この操作を実行してもよろしいですか？</p>
-      <div class="mt-4 flex justify-center gap-2">
-        <button id="confirmCancelBtn" class="px-3.5 py-1.5 rounded-lg bg-stone-100 text-stone-700 font-semibold hover:bg-stone-200 transition">キャンセル</button>
-        <button id="confirmOkBtn" class="px-4 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-md shadow-rose-600/20">実行する</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: 画像枚数照合＆ドライブ一括同期モーダル -->
-  <div id="driveImageSyncModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
-    <div class="relative w-full max-w-md bg-washi-card rounded-2xl border border-stone-200 washi-shadow overflow-hidden p-4 sm:p-5 animate-fade-in text-[10.5px]">
-      <div class="flex items-center justify-between pb-2.5 border-b border-stone-200">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center">
-            <i data-lucide="images" class="w-3.5 h-3.5"></i>
-          </div>
-          <div>
-            <h3 class="font-mincho text-xs sm:text-sm font-bold text-tokiwa-dark">Googleドライブ画像照合 ＆ 一括同期</h3>
-            <p class="text-[9px] text-stone-500">写真の枚数整合とドライブURLの一括上書き更新</p>
-          </div>
-        </div>
-        <button onclick="closeDriveImageSyncModal()" class="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition">
-          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-
-      <div class="py-3 space-y-3">
-        <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="p-2.5 rounded-xl bg-stone-50 border border-stone-200">
-            <span class="text-[9px] text-stone-500 block">アプリ内の写真総数</span>
-            <span id="imgModalAppCount" class="font-mincho font-bold text-base text-stone-800">- 枚</span>
-            <span id="imgModalUnsyncedCount" class="text-[8.5px] text-amber-700 block mt-0.5">未保存: - 枚</span>
-          </div>
-          <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200">
-            <span class="text-[9px] text-indigo-700 block">Googleドライブ上の保存数</span>
-            <span id="imgModalDriveCount" class="font-mincho font-bold text-base text-indigo-950">- 枚</span>
-            <span id="imgModalDriveStatus" class="text-[8.5px] text-indigo-600 block mt-0.5">照合中...</span>
-          </div>
-        </div>
-
-        <div class="p-2.5 rounded-xl bg-white border border-stone-200 space-y-1">
-          <div class="flex items-center justify-between">
-            <strong class="font-bold text-stone-800 text-[10px]">画質・解像度について</strong>
-            <span class="text-[8px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-semibold">品質維持</span>
-          </div>
-          <p class="text-[9px] text-stone-600 leading-relaxed">
-            手元に保存されている画像データをそのままGoogleドライブへ転送・上書きするため、<strong>同期の際に画像が縮小されたり画質が落ちることはありません。</strong>
-          </p>
-        </div>
-
-        <div id="imgSyncProgressBarContainer" class="hidden space-y-1">
-          <div class="flex justify-between text-[9px] text-stone-600 font-bold">
-            <span id="imgSyncProgressText">同期アップロード中...</span>
-            <span id="imgSyncProgressPercent">0%</span>
-          </div>
-          <div class="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-            <div id="imgSyncProgressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-          </div>
-        </div>
-
-        <div id="imgSyncResultAlert" class="hidden p-2 rounded-xl text-[9.5px]"></div>
-      </div>
-
-      <div class="pt-2.5 border-t border-stone-200 flex justify-end gap-2">
-        <button onclick="closeDriveImageSyncModal()" class="px-3 py-1 rounded-lg bg-stone-200 text-stone-700 font-semibold text-[10px] hover:bg-stone-300 transition">
-          閉じる
-        </button>
-        <button id="imgSyncExecuteBtn" onclick="executeDriveBatchSync()" class="px-3.5 py-1 rounded-lg bg-indigo-700 text-white font-bold text-[10px] hover:bg-indigo-800 transition shadow-sm flex items-center gap-1.5">
-          <i data-lucide="upload-cloud" class="w-3 h-3"></i>
-          <span>未保存の写真をドライブへ一括保存</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: 2人共同管理・同期ガイドモーダル -->
+  <!-- MODAL: スプレッドシート連携ガイドモーダル -->
   <div id="syncGuideModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
     <div class="relative w-full max-w-md bg-washi-card rounded-2xl border border-stone-200 washi-shadow overflow-hidden p-4 sm:p-5 animate-fade-in text-[10.5px]">
       <div class="flex items-center justify-between pb-2.5 border-b border-stone-200">
@@ -966,7 +938,7 @@
           </div>
           <div>
             <h3 class="font-mincho text-xs sm:text-sm font-bold text-tokiwa-dark">Googleスプレッドシート連携（共同管理）</h3>
-            <p class="text-[9px] text-stone-500">スプレッドシートとGoogleドライブを愛樹データの保存先に設定</p>
+            <p class="text-[9px] text-stone-500">スプレッドシートを愛樹台帳の安全な保存先に設定</p>
           </div>
         </div>
         <button onclick="closeSyncGuideModal()" class="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition">
@@ -977,23 +949,13 @@
       <div class="py-3 space-y-2.5 max-h-[70vh] overflow-y-auto">
         <div id="cloudStatusBanner" class="p-2.5 rounded-xl border flex items-start gap-2"></div>
 
-        <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 space-y-1">
-          <span class="font-bold text-[10px] flex items-center gap-1 text-emerald-900">
-            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
-            1鉢ごとの完全同期 ＆ 写真自動消去
-          </span>
-          <p class="text-[9px] text-emerald-900 leading-relaxed">
-            盆栽を削除するとスプレッドシートの行とGoogleドライブの写真が自動消去され、相手の画面でも「取り込む」を押すことで綺麗に削除されます。
-          </p>
-        </div>
-
         <div class="bg-white p-3 rounded-xl border border-stone-200 space-y-2">
           <div class="flex items-center justify-between">
             <span class="font-bold text-stone-800 text-[10.5px]">GAS WebアプリURL</span>
             <span class="text-[8.5px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-semibold border border-emerald-200">暗号化保存済</span>
           </div>
           <p class="text-[9px] text-stone-500 leading-relaxed">
-            別のURLに変更したい場合のみ、新しいURLを入力して「今すぐ同期」を押してください。空欄のままの場合は組み込みの暗号化URLが自動適用されます。
+            別のURLに変更したい場合のみ入力してください。空欄の場合は組み込みの暗号化URLが自動適用されます。
           </p>
           <input type="password" id="gasWebAppUrlInput" placeholder="●●●●●●●●●●●●●●●●●●●●（組み込み暗号化URLを使用中）" class="w-full p-1.5 text-[9.5px] font-mono rounded-lg border border-stone-300 focus:outline-none focus:ring-1.5 focus:ring-tokiwa bg-stone-50">
 
@@ -1006,16 +968,6 @@
               <span>今すぐ同期</span>
             </button>
           </div>
-        </div>
-
-        <div id="syncTroubleHelp" class="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-950 space-y-1">
-          <span class="font-bold text-[10px] flex items-center gap-1 text-amber-900">
-            <i data-lucide="help-circle" class="w-3 h-3 text-amber-600"></i>
-            接続エラー（Failed to fetch）が出る場合
-          </span>
-          <p class="text-[9px] text-amber-900 leading-relaxed">
-            Google Apps Scriptのデプロイ設定で、<strong>「アクセスできるユーザー」が『全員（Anyone）』</strong>になっていることをご確認ください。
-          </p>
         </div>
       </div>
 
@@ -1031,8 +983,6 @@
     <i id="toastIcon" data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
     <span id="toastMessage" class="break-words">処理が完了しました</span>
   </div>
-
-  <input type="file" id="speciesCardImageFileInput" accept="image/*" class="hidden" onchange="handleDirectSpeciesImageChange(event)">
 
   <script>
     // 暗号化バイナリ（XORマスク 42 による可逆バイト列変換）
@@ -1056,23 +1006,25 @@
 
     const STORAGE_KEY_BONSAI = 'bonsai_techo_bonsai_list';
     const STORAGE_KEY_SPECIES = 'bonsai_techo_species_list';
+    const STORAGE_KEY_DELETED = 'bonsai_techo_deleted_history';
+    const STORAGE_KEY_USER_NAME = 'bonsai_techo_user_name';
     const STORAGE_KEY_GAS_URL = 'bonsai_techo_gas_url';
     const STORAGE_KEY_BG_IMAGE = 'bonsai_techo_custom_bg';
     const STORAGE_KEY_BG_MOTION = 'bonsai_techo_bg_motion';
     const STORAGE_KEY_BG_SLIDESHOW = 'bonsai_techo_bg_slideshow';
     const STORAGE_KEY_BG_OPACITY = 'bonsai_techo_bg_opacity';
-    const STORAGE_KEY_INIT = 'bonsai_techo_is_initialized_v2';
     const STORAGE_KEY_LAST_TIMESTAMP = 'bonsai_techo_last_server_timestamp';
 
     let inMemoryBonsaiList = null;
     let inMemorySpeciesList = null;
+    let inMemoryDeletedHistory = null;
+    let currentUserName = "";
     let isSheetConnected = false;
     let isSyncing = false;
     let currentCarteBonsaiId = null;
     let currentTab = 'inventory';
     let currentCategoryFilter = 'all';
     let filterRepotOnly = false;
-    let targetSpeciesIdForImageChange = null;
 
     let pollingTimer = null;
     let cachedLatestRemoteTimestamp = null;
@@ -1259,6 +1211,62 @@
       safeCreateIcons();
     }
 
+    function formatDateTime(isoOrTimestamp) {
+      if (!isoOrTimestamp) return '不明';
+      const d = new Date(isoOrTimestamp);
+      if (isNaN(d.getTime())) return '不明';
+      return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    // ユーザー名管理
+    function initUserName() {
+      const stored = localStorage.getItem(STORAGE_KEY_USER_NAME);
+      if (stored && stored.trim() !== "") {
+        currentUserName = stored.trim();
+      } else {
+        currentUserName = "お名前未設定";
+      }
+      updateUserNameUI();
+    }
+
+    function updateUserNameUI() {
+      const headerEl = document.getElementById('headerUserName');
+      const menuEl = document.getElementById('menuUserName');
+      const footerEl = document.getElementById('displayFooterUser');
+      if (headerEl) headerEl.textContent = `編集者: ${currentUserName}`;
+      if (menuEl) menuEl.textContent = currentUserName;
+      if (footerEl) footerEl.textContent = `編集者: ${currentUserName}`;
+    }
+
+    function openUserNameModal() {
+      const modal = document.getElementById('userNameModal');
+      const input = document.getElementById('userNameInput');
+      if (!modal) return;
+      if (input) input.value = (currentUserName === "お名前未設定") ? "" : currentUserName;
+      modal.classList.remove('hidden');
+      safeCreateIcons();
+    }
+
+    function closeUserNameModal() {
+      const modal = document.getElementById('userNameModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function saveUserNameFromInput() {
+      const input = document.getElementById('userNameInput');
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) {
+        showToast('お名前を入力してください', 'alert-circle');
+        return;
+      }
+      currentUserName = val;
+      localStorage.setItem(STORAGE_KEY_USER_NAME, currentUserName);
+      updateUserNameUI();
+      closeUserNameModal();
+      showToast(`お名前を「${currentUserName}」に設定しました！`);
+    }
+
     function compressImageFile(file, maxWidth = 900, quality = 0.75) {
       return new Promise((resolve, reject) => {
         if (!file || !file.type.startsWith('image/')) {
@@ -1294,53 +1302,54 @@
       try {
         localStorage.setItem(STORAGE_KEY_BONSAI, JSON.stringify(inMemoryBonsaiList || []));
         localStorage.setItem(STORAGE_KEY_SPECIES, JSON.stringify(inMemorySpeciesList || []));
-        localStorage.setItem(STORAGE_KEY_INIT, 'true');
+        localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(inMemoryDeletedHistory || []));
       } catch (err) {
         console.warn("LocalStorage save warning:", err);
       }
     }
 
     function loadBonsaiList() {
-      if (inMemoryBonsaiList !== null && inMemoryBonsaiList !== undefined) {
-        return inMemoryBonsaiList;
-      }
+      if (inMemoryBonsaiList !== null) return inMemoryBonsaiList;
       try {
         const stored = localStorage.getItem(STORAGE_KEY_BONSAI);
-        if (stored !== null) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            inMemoryBonsaiList = parsed;
-            return inMemoryBonsaiList;
-          }
-        }
-      } catch (e) {
-        console.warn("LocalStorage load error:", e);
-      }
-
-      inMemoryBonsaiList = [];
-      persistToLocalStorage();
+        if (stored) inMemoryBonsaiList = JSON.parse(stored);
+      } catch (e) {}
+      if (!Array.isArray(inMemoryBonsaiList)) inMemoryBonsaiList = [];
       return inMemoryBonsaiList;
     }
 
     function loadSpeciesList() {
-      if (inMemorySpeciesList !== null && inMemorySpeciesList !== undefined) {
-        return inMemorySpeciesList;
-      }
+      if (inMemorySpeciesList !== null) return inMemorySpeciesList;
       try {
         const stored = localStorage.getItem(STORAGE_KEY_SPECIES);
-        if (stored !== null) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            inMemorySpeciesList = parsed;
-            return inMemorySpeciesList;
-          }
-        }
-      } catch (e) {
-        console.warn("LocalStorage species load error:", e);
+        if (stored) inMemorySpeciesList = JSON.parse(stored);
+      } catch (e) {}
+      if (!Array.isArray(inMemorySpeciesList) || inMemorySpeciesList.length === 0) {
+        inMemorySpeciesList = JSON.parse(JSON.stringify(DEFAULT_SPECIES));
       }
-      inMemorySpeciesList = JSON.parse(JSON.stringify(DEFAULT_SPECIES));
-      persistToLocalStorage();
       return inMemorySpeciesList;
+    }
+
+    function loadDeletedHistory() {
+      if (inMemoryDeletedHistory !== null) return inMemoryDeletedHistory;
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_DELETED);
+        if (stored) inMemoryDeletedHistory = JSON.parse(stored);
+      } catch (e) {}
+      if (!Array.isArray(inMemoryDeletedHistory)) inMemoryDeletedHistory = [];
+      return inMemoryDeletedHistory;
+    }
+
+    function updateDeletedBadgeUI() {
+      const history = loadDeletedHistory();
+      const badge = document.getElementById('headerDeletedBadge');
+      if (!badge) return;
+      if (history.length > 0) {
+        badge.textContent = history.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
     }
 
     function getGasWebAppUrl() {
@@ -1381,7 +1390,6 @@
       if (!gasUrl || isSyncing) return;
 
       try {
-        // キャッシュによるすれ違いを防ぐため _t パラメータを付加
         const cacheBuster = `_t=${Date.now()}`;
         const sep = gasUrl.includes('?') ? '&' : '?';
         const response = await fetch(`${gasUrl}${sep}action=getLatestTimestamp&${cacheBuster}`, { method: 'GET' });
@@ -1391,7 +1399,6 @@
           const remoteTimeStr = String(resJson.lastModified);
           const localKnownTimeStr = localStorage.getItem(STORAGE_KEY_LAST_TIMESTAMP) || '';
 
-          // 初回起動時は基準時刻として保存
           if (!localKnownTimeStr) {
             localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, remoteTimeStr);
             return;
@@ -1400,7 +1407,6 @@
           const remoteTime = new Date(remoteTimeStr).getTime();
           const localTime = new Date(localKnownTimeStr).getTime();
 
-          // リモートが手元の時刻より新しい場合に通知バーを表示
           if (!isNaN(remoteTime) && !isNaN(localTime) && remoteTime > localTime) {
             cachedLatestRemoteTimestamp = remoteTimeStr;
             showPartnerUpdateBanner(remoteTimeStr);
@@ -1450,222 +1456,6 @@
           checkRemoteUpdate();
         }
       });
-    }
-
-    function scanAllImages() {
-      const bonsaiList = loadBonsaiList();
-      const speciesList = loadSpeciesList();
-
-      const imageItems = [];
-
-      bonsaiList.forEach(b => {
-        if (b.imageUrl) {
-          imageItems.push({
-            type: 'bonsai',
-            id: b.id,
-            name: b.name,
-            imageUrl: b.imageUrl,
-            isBase64: b.imageUrl.startsWith('data:image'),
-            isDrive: b.imageUrl.includes('googleusercontent.com') || b.imageUrl.includes('drive.google.com')
-          });
-        }
-        if (Array.isArray(b.timeline)) {
-          b.timeline.forEach(tl => {
-            if (tl.imageUrl) {
-              imageItems.push({
-                type: 'timeline',
-                id: tl.id,
-                bonsaiId: b.id,
-                name: `${b.name}（${tl.date}記録）`,
-                imageUrl: tl.imageUrl,
-                isBase64: tl.imageUrl.startsWith('data:image'),
-                isDrive: tl.imageUrl.includes('googleusercontent.com') || tl.imageUrl.includes('drive.google.com')
-              });
-            }
-          });
-        }
-      });
-
-      speciesList.forEach(sp => {
-        if (sp.imageUrl) {
-          imageItems.push({
-            type: 'species',
-            id: sp.id,
-            name: sp.name,
-            imageUrl: sp.imageUrl,
-            isBase64: sp.imageUrl.startsWith('data:image'),
-            isDrive: sp.imageUrl.includes('googleusercontent.com') || sp.imageUrl.includes('drive.google.com')
-          });
-        }
-      });
-
-      const totalCount = imageItems.length;
-      const base64Count = imageItems.filter(item => item.isBase64).length;
-      const driveCount = imageItems.filter(item => item.isDrive).length;
-
-      return {
-        items: imageItems,
-        totalCount,
-        base64Count,
-        driveCount
-      };
-    }
-
-    async function checkAndSyncDriveImages() {
-      const modal = document.getElementById('driveImageSyncModal');
-      const appCountEl = document.getElementById('imgModalAppCount');
-      const unsyncedEl = document.getElementById('imgModalUnsyncedCount');
-      const driveCountEl = document.getElementById('imgModalDriveCount');
-      const driveStatusEl = document.getElementById('imgModalDriveStatus');
-      const alertEl = document.getElementById('imgSyncResultAlert');
-      const progressContainer = document.getElementById('imgSyncProgressBarContainer');
-
-      if (!modal) return;
-
-      const scanResult = scanAllImages();
-      if (appCountEl) appCountEl.textContent = `${scanResult.totalCount} 枚`;
-      if (unsyncedEl) unsyncedEl.textContent = `未保存（手元のみ）: ${scanResult.base64Count} 枚`;
-      if (driveCountEl) driveCountEl.textContent = '照会中...';
-      if (driveStatusEl) driveStatusEl.textContent = 'ドライブ通信中...';
-      if (alertEl) alertEl.classList.add('hidden');
-      if (progressContainer) progressContainer.classList.add('hidden');
-
-      modal.classList.remove('hidden');
-      document.body.classList.add('overflow-hidden');
-      safeCreateIcons();
-
-      const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) {
-        if (driveCountEl) driveCountEl.textContent = '未接続';
-        if (driveStatusEl) driveStatusEl.textContent = '連携URL未設定';
-        return;
-      }
-
-      try {
-        const response = await fetch(`${gasUrl}?action=getDriveImageCount`, { method: 'GET' });
-        const resJson = await response.json();
-        if (resJson && resJson.status === 'success') {
-          const driveFileCount = resJson.count || 0;
-          if (driveCountEl) driveCountEl.textContent = `${driveFileCount} 枚`;
-          if (driveStatusEl) {
-            if (scanResult.base64Count === 0 && driveFileCount >= scanResult.driveCount) {
-              driveStatusEl.textContent = '🟢 整合完了（全画像保存済）';
-              driveStatusEl.className = 'text-[8.5px] text-emerald-700 font-bold block mt-0.5';
-            } else {
-              driveStatusEl.textContent = `⚠️ 未保存が ${scanResult.base64Count} 枚あります`;
-              driveStatusEl.className = 'text-[8.5px] text-amber-700 font-bold block mt-0.5';
-            }
-          }
-        } else {
-          if (driveCountEl) driveCountEl.textContent = '取得失敗';
-          if (driveStatusEl) driveStatusEl.textContent = resJson.message || 'フォルダ未設定';
-        }
-      } catch (err) {
-        if (driveCountEl) driveCountEl.textContent = 'エラー';
-        if (driveStatusEl) driveStatusEl.textContent = '通信失敗';
-      }
-    }
-
-    function closeDriveImageSyncModal() {
-      const modal = document.getElementById('driveImageSyncModal');
-      if (modal) modal.classList.add('hidden');
-      document.body.classList.remove('overflow-hidden');
-    }
-
-    async function executeDriveBatchSync() {
-      const scanResult = scanAllImages();
-      const unsyncedItems = scanResult.items.filter(item => item.isBase64);
-
-      if (unsyncedItems.length === 0) {
-        showToast('未保存の写真はありません。すべてGoogleドライブへ保存済みです！');
-        return;
-      }
-
-      const progressContainer = document.getElementById('imgSyncProgressBarContainer');
-      const progressBar = document.getElementById('imgSyncProgressBar');
-      const progressText = document.getElementById('imgSyncProgressText');
-      const progressPercent = document.getElementById('imgSyncProgressPercent');
-      const executeBtn = document.getElementById('imgSyncExecuteBtn');
-      const alertEl = document.getElementById('imgSyncResultAlert');
-
-      if (progressContainer) progressContainer.classList.remove('hidden');
-      if (executeBtn) {
-        executeBtn.disabled = true;
-        executeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      }
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (let i = 0; i < unsyncedItems.length; i++) {
-        const item = unsyncedItems[i];
-        const currentNum = i + 1;
-        const total = unsyncedItems.length;
-        const percent = Math.round((currentNum / total) * 100);
-
-        if (progressBar) progressBar.style.width = `${percent}%`;
-        if (progressPercent) progressPercent.textContent = `${percent}%`;
-        if (progressText) progressText.textContent = `${currentNum}/${total} 枚目をアップロード中: ${item.name}`;
-
-        try {
-          const driveUrl = await uploadImageToGoogleDrive(item.imageUrl, `sync_${item.type}_${item.id}_${Date.now()}.jpg`);
-          
-          if (driveUrl && driveUrl.startsWith('http')) {
-            if (item.type === 'bonsai') {
-              const b = inMemoryBonsaiList.find(x => x.id === item.id);
-              if (b) {
-                b.imageUrl = driveUrl;
-                b.updatedAt = new Date().toISOString();
-                await sendSingleBonsaiToSheet(b);
-              }
-            } else if (item.type === 'timeline') {
-              const b = inMemoryBonsaiList.find(x => x.id === item.bonsaiId);
-              if (b && Array.isArray(b.timeline)) {
-                const tl = b.timeline.find(x => x.id === item.id);
-                if (tl) tl.imageUrl = driveUrl;
-                b.updatedAt = new Date().toISOString();
-                await sendSingleBonsaiToSheet(b);
-              }
-            } else if (item.type === 'species') {
-              const sp = inMemorySpeciesList.find(x => x.id === item.id);
-              if (sp) sp.imageUrl = driveUrl;
-            }
-            successCount++;
-          } else {
-            failCount++;
-          }
-        } catch (uploadErr) {
-          console.warn("Upload failed for item:", item.name, uploadErr);
-          failCount++;
-        }
-      }
-
-      persistToLocalStorage();
-      renderBonsaiList();
-      renderDedicatedGantt();
-      renderSpeciesCatalog();
-      if (currentCarteBonsaiId) {
-        openCarteModal(currentCarteBonsaiId);
-      }
-
-      if (executeBtn) {
-        executeBtn.disabled = false;
-        executeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-      }
-
-      if (alertEl) {
-        alertEl.classList.remove('hidden');
-        if (failCount === 0) {
-          alertEl.className = 'p-2 rounded-xl text-[9.5px] bg-emerald-50 text-emerald-900 border border-emerald-300';
-          alertEl.innerHTML = `<strong>同期完了:</strong> ${successCount}枚の写真すべてをGoogleドライブへ保存し、URLを一括上書き更新しました！`;
-        } else {
-          alertEl.className = 'p-2 rounded-xl text-[9.5px] bg-amber-50 text-amber-900 border border-amber-300';
-          alertEl.innerHTML = `<strong>一部完了:</strong> ${successCount}枚を保存、${failCount}枚で通信エラーが発生しました。`;
-        }
-      }
-
-      showToast(`写真の一括同期が完了しました（成功: ${successCount}枚）`);
-      checkAndSyncDriveImages();
     }
 
     function switchTab(tabId) {
@@ -1758,6 +1548,7 @@
           headerAlertBtn.classList.remove('flex');
         }
       }
+      updateDeletedBadgeUI();
     }
 
     function renderBonsaiList() {
@@ -1821,6 +1612,8 @@
           fruit: '<span class="text-[8.5px] px-1.5 py-0.2 rounded-full font-bold bg-orange-100 text-orange-900 border border-orange-300">実もの</span>'
         };
 
+        const lastEditorStr = b.updatedBy ? `by ${b.updatedBy}` : (b.addedBy ? `by ${b.addedBy}` : '');
+
         return `
           <div onclick="openCarteModal('${b.id}')" class="bg-white/80 backdrop-blur-sm rounded-xl border border-stone-200/90 washi-shadow washi-shadow-hover transition duration-200 overflow-hidden cursor-pointer flex flex-col group animate-fade-in">
             <div class="aspect-[16/10] bg-stone-100 relative overflow-hidden flex items-center justify-center">
@@ -1853,7 +1646,7 @@
               </div>
 
               <div class="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between text-[9px] text-stone-400">
-                <span>入手: ${b.acquiredDate || '未記録'}</span>
+                <span>${lastEditorStr}</span>
                 <span class="text-tokiwa flex items-center gap-0.5 font-bold group-hover:translate-x-0.5 transition">
                   カルテを見る <i data-lucide="chevron-right" class="w-3 h-3"></i>
                 </span>
@@ -2017,10 +1810,6 @@
                 <div class="absolute top-2 left-2">
                   ${catBadges[sp.category] || catBadges.conifer}
                 </div>
-                <button onclick="triggerSpeciesImageChange('${sp.id}')" class="absolute top-2 right-2 bg-white/90 hover:bg-white text-stone-700 text-[9px] font-bold px-2 py-1 rounded-md shadow-sm border border-stone-300 flex items-center gap-1 transition">
-                  <i data-lucide="camera" class="w-2.5 h-2.5 text-tokiwa"></i>
-                  <span>写真変更</span>
-                </button>
               </div>
 
               <div class="p-3 space-y-2">
@@ -2043,7 +1832,7 @@
             </div>
 
             <div class="p-3 pt-0">
-              <button onclick="adoptSpecies('${sp.id}')" class="w-full py-1.5 px-3 rounded-lg bg-tokiwa text-white hover:bg-tokiwa-light transition font-bold text-[10px] shadow-sm flex items-center justify-center gap-1.5">
+              <button onclick="openNewBonsaiModal('${sp.id}')" class="w-full py-1.5 px-3 rounded-lg bg-tokiwa text-white hover:bg-tokiwa-light transition font-bold text-[10px] shadow-sm flex items-center justify-center gap-1.5">
                 <i data-lucide="plus-circle" class="w-3 h-3"></i>
                 <span>この樹種をお迎えする（台帳へ登録）</span>
               </button>
@@ -2071,6 +1860,11 @@
       document.getElementById('carteAcquiredDate').textContent = b.acquiredDate ? `${b.acquiredDate}` : '未記録';
       document.getElementById('carteAcquiredFrom').textContent = b.acquiredFrom || '未記録';
       document.getElementById('carteSoilFormula').textContent = b.soilFormula || (sp ? sp.soilFormula : '赤玉土7 : 桐生砂3');
+
+      const lastEditorBadge = document.getElementById('carteLastEditorBadge');
+      if (lastEditorBadge) {
+        lastEditorBadge.textContent = b.updatedBy ? `最終更新: ${b.updatedBy} (${formatDateTime(b.updatedAt)})` : `登録: ${b.addedBy || '不明'}`;
+      }
 
       const badgeEl = document.getElementById('carteCategoryBadge');
       const catLabels = { conifer: '松柏', deciduous: '雑木', flower: '花もの', fruit: '実もの' };
@@ -2105,11 +1899,12 @@
 
       const memoSection = document.getElementById('carteMemoSection');
       const memoEl = document.getElementById('carteMemo');
-      if (b.memo) {
+      if (b.memo && b.memo.trim() !== "") {
         if (memoSection) memoSection.classList.remove('hidden');
         if (memoEl) memoEl.textContent = b.memo;
       } else {
-        if (memoSection) memoSection.classList.add('hidden');
+        if (memoSection) memoSection.classList.remove('hidden');
+        if (memoEl) memoEl.textContent = "管理メモはありません。基本情報編集からメモを追加できます。";
       }
 
       const mainImg = document.getElementById('carteMainImage');
@@ -2122,6 +1917,7 @@
         embeddedContainer.innerHTML = generateGanttTableHtml(sp);
       }
 
+      renderCarteHistory(b.history || []);
       renderCarteTimeline(b.timeline || []);
 
       modal.classList.remove('hidden');
@@ -2133,6 +1929,26 @@
       const modal = document.getElementById('carteModal');
       if (modal) modal.classList.add('hidden');
       document.body.classList.remove('overflow-hidden');
+    }
+
+    function renderCarteHistory(history) {
+      const listEl = document.getElementById('carteHistoryList');
+      if (!listEl) return;
+
+      if (!history || history.length === 0) {
+        listEl.innerHTML = '<p class="text-[9px] text-stone-400 py-1 text-center">まだ編集履歴はありません。</p>';
+        return;
+      }
+
+      listEl.innerHTML = history.slice().reverse().map(h => `
+        <div class="text-[9.5px] p-2 rounded-lg bg-stone-50 border border-stone-200/80">
+          <div class="flex items-center justify-between text-stone-500 text-[9px] mb-0.5">
+            <span class="font-bold text-tokiwa">${h.by || '不明'}</span>
+            <span>${formatDateTime(h.time)}</span>
+          </div>
+          <p class="text-stone-700 leading-tight">${h.msg || '編集を行いました'}</p>
+        </div>
+      `).join('');
     }
 
     function renderCarteTimeline(timeline) {
@@ -2157,6 +1973,7 @@
 
       listEl.innerHTML = timeline.map(item => {
         const badge = typeLabels[item.type] || typeLabels.other;
+        const authorStr = item.addedBy ? `（記録: ${item.addedBy}）` : '';
         return `
           <div class="p-2.5 rounded-xl border border-stone-200 bg-[#faf8f3] flex flex-col sm:flex-row gap-2.5 items-start">
             ${item.imageUrl ? `
@@ -2168,6 +1985,7 @@
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold border ${badge.class}">${badge.label}</span>
                 <span class="text-[9.5px] font-bold text-stone-700">${item.date || ''}</span>
+                <span class="text-[8.5px] text-stone-400 font-medium">${authorStr}</span>
               </div>
               <p class="text-[9.5px] text-stone-600 mt-1 whitespace-pre-wrap leading-relaxed">${item.note || ''}</p>
             </div>
@@ -2177,6 +1995,11 @@
     }
 
     function openNewBonsaiModal(presetSpeciesId = null) {
+      if (!currentUserName || currentUserName === "お名前未設定") {
+        openUserNameModal();
+        return;
+      }
+
       const modal = document.getElementById('bonsaiFormModal');
       const form = document.getElementById('bonsaiForm');
       const title = document.getElementById('bonsaiFormTitle');
@@ -2292,7 +2115,7 @@
     }
 
     /**
-     * 1鉢の追加または編集保存（即座にシートへ個別反映）
+     * 1鉢の追加または編集保存（お互いの追記を両方残すマージ機構）
      */
     async function handleBonsaiFormSubmit(e) {
       e.preventDefault();
@@ -2310,29 +2133,75 @@
       }
 
       const nowTimestamp = new Date().toISOString();
+      const editorName = currentUserName || "お名前未設定";
+
+      const formName = document.getElementById('formName').value.trim();
+      const formStyle = document.getElementById('formStyle').value.trim();
+      const formPot = document.getElementById('formPot').value.trim();
+      const formAcquiredDate = document.getElementById('formAcquiredDate').value;
+      const formAcquiredFrom = document.getElementById('formAcquiredFrom').value.trim();
+      const formLastRepotDate = document.getElementById('formLastRepotDate').value || formAcquiredDate;
+      const formSoilFormula = document.getElementById('formSoilFormula').value.trim();
+      const newMemo = document.getElementById('formMemo').value.trim();
+
+      let historyArray = existing && Array.isArray(existing.history) ? [...existing.history] : [];
+      let finalMemo = newMemo;
+
+      if (existing) {
+        // 既存編集時：差分を履歴に記録
+        const changes = [];
+        if (existing.name !== formName) changes.push(`銘を「${existing.name}」から「${formName}」に変更`);
+        if (existing.style !== formStyle) changes.push(`樹形を変更`);
+        if (existing.pot !== formPot) changes.push(`鉢を変更`);
+        if (existing.lastRepotDate !== formLastRepotDate) changes.push(`植え替え日を変更`);
+        if (existing.memo !== newMemo) {
+          changes.push(`メモを更新`);
+          // お互いのメモが消えないよう、もし相手のメモが存在し、かつ今回新規入力がある場合は両方保持
+          if (existing.memo && existing.memo.trim() !== "" && newMemo && !newMemo.includes(existing.memo)) {
+            finalMemo = `${newMemo}\n\n--- 過去の記録 ---\n${existing.memo}`;
+          }
+        }
+
+        const msg = changes.length > 0 ? changes.join('、') : '基本情報を確認・保存';
+        historyArray.push({
+          time: nowTimestamp,
+          by: editorName,
+          msg: msg
+        });
+      } else {
+        historyArray.push({
+          time: nowTimestamp,
+          by: editorName,
+          msg: `台帳に新しく登録しました（入手元: ${formAcquiredFrom || '未記録'}）`
+        });
+      }
 
       const bonsaiData = {
         id: targetId,
-        name: document.getElementById('formName').value.trim(),
+        name: formName,
         speciesId: speciesId,
         speciesName: sp ? sp.name : '不明樹種',
         category: document.getElementById('formCategory').value,
-        style: document.getElementById('formStyle').value.trim(),
-        pot: document.getElementById('formPot').value.trim(),
-        acquiredDate: document.getElementById('formAcquiredDate').value,
-        acquiredFrom: document.getElementById('formAcquiredFrom').value.trim(),
-        lastRepotDate: document.getElementById('formLastRepotDate').value || document.getElementById('formAcquiredDate').value,
-        soilFormula: document.getElementById('formSoilFormula').value.trim(),
-        memo: document.getElementById('formMemo').value.trim(),
+        style: formStyle,
+        pot: formPot,
+        acquiredDate: formAcquiredDate,
+        acquiredFrom: formAcquiredFrom,
+        lastRepotDate: formLastRepotDate,
+        soilFormula: formSoilFormula,
+        memo: finalMemo,
         imageUrl: imgData,
+        addedBy: existing ? (existing.addedBy || editorName) : editorName,
+        updatedBy: editorName,
         updatedAt: nowTimestamp,
+        history: historyArray,
         timeline: existing && existing.timeline ? existing.timeline : [
           {
             id: `tl-${Date.now()}`,
-            date: document.getElementById('formAcquiredDate').value || new Date().toISOString().split('T')[0],
+            date: formAcquiredDate || nowTimestamp.split('T')[0],
             type: 'other',
-            note: `盆栽手帖に登録しました。（入手元: ${document.getElementById('formAcquiredFrom').value.trim() || '記録なし'}）`,
-            imageUrl: imgData
+            note: `盆栽手帖に登録しました。（入手元: ${formAcquiredFrom || '記録なし'}）`,
+            imageUrl: imgData,
+            addedBy: editorName
           }
         ]
       };
@@ -2354,14 +2223,9 @@
       }
 
       showToast(id ? '愛樹の情報を更新しました！' : '新しい愛樹を登録しました！');
-      
-      // スプレッドシートへ1鉢だけ即座に送信（相手の別の鉢を消さずに安全保存）
       await sendSingleBonsaiToSheet(bonsaiData);
     }
 
-    /**
-     * 単一の盆栽をスプレッドシートへ保存（POST: saveBonsai）
-     */
     async function sendSingleBonsaiToSheet(bonsaiItem) {
       const gasUrl = getGasWebAppUrl();
       if (!gasUrl) return false;
@@ -2369,7 +2233,7 @@
       try {
         const payload = {
           action: 'saveBonsai',
-          bonsai: sanitizeSingleBonsai(bonsaiItem),
+          bonsai: bonsaiItem,
           lastModified: new Date().toISOString()
         };
 
@@ -2395,7 +2259,7 @@
     }
 
     /**
-     * 盆栽の削除（スプレッドシートの行削除 ＆ ドライブの写真自動消去）
+     * 盆栽の削除（削除履歴への安全退避）
      */
     function confirmDeleteBonsai(bonsaiId) {
       const targetId = bonsaiId || currentCarteBonsaiId;
@@ -2406,52 +2270,50 @@
 
       showConfirmDialog(
         `「${b.name}」を削除`,
-        'この愛樹の台帳データ（手入れ記録・ドライブに保存された写真を含む）を完全に削除します。お相手の画面からも消去されます。よろしいですか？',
+        `この愛樹を台帳から削除し、「削除履歴（安全保管庫）」へ移動します。\n写真は残るため、後からいつでも完全に元通り復元できます。よろしいですか？`,
         async () => {
-          showToast('Googleドライブの写真とシートデータを削除中...', 'trash-2');
+          const nowTimestamp = new Date().toISOString();
+          const editorName = currentUserName || "お名前未設定";
 
-          // 関連するすべての画像URLを抽出
-          const imageUrlsToDelete = [];
-          if (b.imageUrl && b.imageUrl.startsWith('http')) {
-            imageUrlsToDelete.push(b.imageUrl);
-          }
-          if (Array.isArray(b.timeline)) {
-            b.timeline.forEach(tl => {
-              if (tl.imageUrl && tl.imageUrl.startsWith('http')) {
-                imageUrlsToDelete.push(tl.imageUrl);
-              }
-            });
-          }
+          const deletedEntry = {
+            id: `del-${Date.now()}`,
+            bonsaiId: targetId,
+            bonsaiName: b.name,
+            speciesName: b.speciesName,
+            originalData: b,
+            deletedBy: editorName,
+            deletedAt: nowTimestamp
+          };
 
-          // GASへ削除リクエスト送信（行削除 ＆ meta更新が優先実行される）
-          const result = await deleteBonsaiFromRemote(targetId, imageUrlsToDelete);
+          // 手元の削除履歴へ退避
+          loadDeletedHistory();
+          inMemoryDeletedHistory.unshift(deletedEntry);
 
-          // 手元からも削除して画面を最新化
+          // 手元の台帳から除外
           inMemoryBonsaiList = inMemoryBonsaiList.filter(item => item.id !== targetId);
+
           persistToLocalStorage();
           updateSummaryStats();
           renderBonsaiList();
           closeCarteModal();
 
-          if (result && result.success) {
-            const countMsg = result.deletedCount > 0 ? `（ドライブ写真 ${result.deletedCount}枚を消去）` : '';
-            showToast(`「${b.name}」を削除しました${countMsg}`);
-          } else {
-            showToast(`「${b.name}」を手元から削除しました`);
-          }
+          showToast(`「${b.name}」を削除履歴に移動しました（いつでも復元可能）`);
+
+          // スプレッドシートへ送信（台帳行の削除 ＆ 削除履歴シートへの保管）
+          await sendDeleteToSheet(targetId, deletedEntry);
         }
       );
     }
 
-    async function deleteBonsaiFromRemote(bonsaiId, imageUrls) {
+    async function sendDeleteToSheet(bonsaiId, deletedEntry) {
       const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) return { success: false, deletedCount: 0 };
+      if (!gasUrl) return false;
 
       try {
         const payload = {
           action: 'deleteBonsai',
           bonsaiId: bonsaiId,
-          imageUrls: imageUrls
+          deletedEntry: deletedEntry
         };
 
         const response = await fetch(gasUrl, {
@@ -2464,25 +2326,143 @@
           if (resJson.lastModified) {
             localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, String(resJson.lastModified));
           }
-          return { success: true, deletedCount: resJson.deletedImagesCount || 0 };
+          return true;
         }
-      } catch (e) {
-        console.warn("Remote delete warning:", e);
-      }
-      return { success: false, deletedCount: 0 };
+      } catch (e) {}
+      return false;
     }
 
-    function clearAllBonsaiData() {
+    /**
+     * 削除履歴モーダルを開く
+     */
+    function openDeletedHistoryModal() {
+      const modal = document.getElementById('deletedHistoryModal');
+      const container = document.getElementById('deletedHistoryListContainer');
+      if (!modal || !container) return;
+
+      const history = loadDeletedHistory();
+
+      if (history.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-stone-400">
+            <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <p>削除された愛樹はありません</p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = history.map(item => {
+          const orig = item.originalData || {};
+          const photoUrl = orig.imageUrl || SVG_ART.kuromatsu;
+          return `
+            <div class="p-3 rounded-xl border border-stone-200 bg-white flex items-center justify-between gap-3 shadow-xs">
+              <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                <div class="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
+                  <img src="${photoUrl}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-stone-800 text-[11px] truncate">${item.bonsaiName || orig.name || '名称不明'}</h4>
+                  <p class="text-[9px] text-stone-500">${orig.speciesName || '樹種不明'} · 削除日: ${formatDateTime(item.deletedAt)}</p>
+                  <p class="text-[8.5px] text-rose-700 font-medium">削除者: ${item.deletedBy || '不明'}</p>
+                </div>
+              </div>
+              <button onclick="restoreBonsaiFromHistory('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 active:scale-95 transition font-bold text-[10px] shrink-0 flex items-center gap-1 shadow-xs">
+                <i data-lucide="rotate-ccw" class="w-3 h-3 text-emerald-600"></i>
+                <span>台帳に復元</span>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      safeCreateIcons();
+    }
+
+    function closeDeletedHistoryModal() {
+      const modal = document.getElementById('deletedHistoryModal');
+      if (modal) modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    /**
+     * 削除履歴からの復元実行
+     */
+    async function restoreBonsaiFromHistory(historyId) {
+      const history = loadDeletedHistory();
+      const targetIndex = history.findIndex(h => h.id === historyId);
+      if (targetIndex < 0) return;
+
+      const entry = history[targetIndex];
+      const orig = entry.originalData;
+      if (!orig) return;
+
+      const restoredName = orig.name;
+      const editorName = currentUserName || "お名前未設定";
+      const nowTimestamp = new Date().toISOString();
+
+      // 履歴に復元ログを追加
+      if (!Array.isArray(orig.history)) orig.history = [];
+      orig.history.push({
+        time: nowTimestamp,
+        by: editorName,
+        msg: `削除履歴から台帳に復元しました`
+      });
+      orig.updatedBy = editorName;
+      orig.updatedAt = nowTimestamp;
+
+      // 手元台帳へ復帰
+      loadBonsaiList();
+      inMemoryBonsaiList.unshift(orig);
+
+      // 手元削除履歴から除外
+      inMemoryDeletedHistory.splice(targetIndex, 1);
+
+      persistToLocalStorage();
+      updateSummaryStats();
+      renderBonsaiList();
+      openDeletedHistoryModal(); // 履歴リスト再描画
+
+      showToast(`「${restoredName}」を台帳に復元しました！`, 'check-circle');
+
+      // スプレッドシートへ復元リクエスト
+      const gasUrl = getGasWebAppUrl();
+      if (gasUrl) {
+        try {
+          await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+              action: 'restoreBonsai',
+              historyId: historyId,
+              bonsai: orig
+            })
+          });
+        } catch (e) {}
+      }
+    }
+
+    function confirmClearAllDeletedHistory() {
       showConfirmDialog(
-        '愛樹台帳のクリア',
-        '登録されている盆栽台帳データをすべて消去し、0鉢の空状態にします。よろしいですか？（※スプレッドシート側も空に同期されます）',
+        '削除履歴の完全消去',
+        '削除履歴に保管されているデータをすべて消去します。この操作を行うと復元できなくなりますが、よろしいですか？',
         async () => {
-          inMemoryBonsaiList = [];
+          inMemoryDeletedHistory = [];
           persistToLocalStorage();
           updateSummaryStats();
-          renderBonsaiList();
-          showToast('愛樹台帳を完全にクリア（0鉢）にしました');
-          await pushToGoogleSheet();
+          openDeletedHistoryModal();
+          showToast('削除履歴を完全にクリアしました');
+
+          const gasUrl = getGasWebAppUrl();
+          if (gasUrl) {
+            try {
+              await fetch(gasUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'clearDeletedHistory' })
+              });
+            } catch (e) {}
+          }
         }
       );
     }
@@ -2548,23 +2528,34 @@
         imgVal = await uploadImageToGoogleDrive(imgVal, `tl_${Date.now()}.jpg`);
       }
 
+      const editorName = currentUserName || "お名前未設定";
+      const nowTimestamp = new Date().toISOString();
+
       const newEntry = {
         id: `tl-${Date.now()}`,
         date: dateVal,
         type: typeVal,
         note: noteVal,
-        imageUrl: imgVal
+        imageUrl: imgVal,
+        addedBy: editorName
       };
 
+      // タイムラインの重複・消失を防ぎ安全に追加
       b.timeline = [newEntry, ...(b.timeline || [])];
-      b.updatedAt = new Date().toISOString();
+      b.updatedBy = editorName;
+      b.updatedAt = nowTimestamp;
 
       if (typeVal === 'repot') {
         b.lastRepotDate = dateVal;
-        showToast('植え替えを記録し、前回の植え替え日を更新しました！');
-      } else {
-        showToast('お手入れ記録を保存しました');
       }
+
+      if (!Array.isArray(b.history)) b.history = [];
+      const typeNames = { repot: '植え替え', pruning: '剪定', bud_nipping: '芽摘み', wiring: '針金かけ', fertilizer: '施肥', pesticide: '消毒', photo: '観察写真', other: '手入れ' };
+      b.history.push({
+        time: nowTimestamp,
+        by: editorName,
+        msg: `${dateVal}の${typeNames[typeVal] || '手入れ'}を記録しました`
+      });
 
       persistToLocalStorage();
       updateSummaryStats();
@@ -2575,25 +2566,15 @@
         openCarteModal(bonsaiId);
       }
 
-      // 更新した1鉢をスプレッドシートへ送信
+      showToast(typeVal === 'repot' ? '植え替えを記録し、前回の植え替え日を更新しました！' : 'お手入れ記録を保存しました');
       await sendSingleBonsaiToSheet(b);
-    }
-
-    function adoptSpecies(speciesId) {
-      openNewBonsaiModal(speciesId);
     }
 
     function openNewSpeciesModal() {
       const modal = document.getElementById('speciesFormModal');
       const form = document.getElementById('speciesForm');
       if (!modal || !form) return;
-
       form.reset();
-      document.getElementById('spImageData').value = '';
-      document.getElementById('spImagePreview').src = '';
-      document.getElementById('spImagePreview').classList.add('hidden');
-      document.getElementById('spImagePlaceholder').classList.remove('hidden');
-
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
       safeCreateIcons();
@@ -2605,74 +2586,13 @@
       document.body.classList.remove('overflow-hidden');
     }
 
-    async function handleSpeciesImageUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const compressed = await compressImageFile(file);
-        document.getElementById('spImageData').value = compressed;
-        const preview = document.getElementById('spImagePreview');
-        const placeholder = document.getElementById('spImagePlaceholder');
-        if (preview && placeholder) {
-          preview.src = compressed;
-          preview.classList.remove('hidden');
-          placeholder.classList.add('hidden');
-        }
-      } catch (err) {
-        showToast('画像の読み込みに失敗しました', 'alert-circle');
-      }
-    }
-
-    function triggerSpeciesImageChange(speciesId) {
-      targetSpeciesIdForImageChange = speciesId;
-      const fileInput = document.getElementById('speciesCardImageFileInput');
-      if (fileInput) {
-        fileInput.value = '';
-        fileInput.click();
-      }
-    }
-
-    async function handleDirectSpeciesImageChange(e) {
-      const file = e.target.files[0];
-      if (!file || !targetSpeciesIdForImageChange) return;
-
-      try {
-        let compressedBase64 = await compressImageFile(file);
-        compressedBase64 = await uploadImageToGoogleDrive(compressedBase64, `species_${targetSpeciesIdForImageChange}.jpg`);
-
-        const speciesList = loadSpeciesList();
-        const target = speciesList.find(s => s.id === targetSpeciesIdForImageChange);
-        if (target) {
-          target.imageUrl = compressedBase64;
-          persistToLocalStorage();
-          renderSpeciesCatalog();
-          showToast(`「${target.name}」の写真を更新しました！`);
-          pushToGoogleSheet();
-        }
-      } catch (err) {
-        showToast('写真の保存に失敗しました', 'alert-circle');
-      } finally {
-        targetSpeciesIdForImageChange = null;
-      }
-    }
-
-    async function handleSpeciesFormSubmit(e) {
+    function handleSpeciesFormSubmit(e) {
       e.preventDefault();
       const name = document.getElementById('spName').value.trim();
       const category = document.getElementById('spCategory').value;
       const soil = document.getElementById('spSoil').value.trim() || '赤玉土7 : 桐生砂3';
       const desc = document.getElementById('spDesc').value.trim();
       const high = document.getElementById('spHighlights').value.trim() || '四季の姿';
-      let imgData = document.getElementById('spImageData').value || null;
-
-      if (imgData && imgData.startsWith('data:image')) {
-        imgData = await uploadImageToGoogleDrive(imgData, `species_${Date.now()}.jpg`);
-      }
-
-      const repotStart = parseInt(document.getElementById('spRepotStart').value) || 3;
-      const repotEnd = parseInt(document.getElementById('spRepotEnd').value) || 4;
-      const pruneStart = parseInt(document.getElementById('spPruneStart').value) || 5;
-      const pruneEnd = parseInt(document.getElementById('spPruneEnd').value) || 6;
 
       const newId = `sp-${Date.now()}`;
       const newSpecies = {
@@ -2682,27 +2602,11 @@
         soilFormula: soil,
         description: desc,
         highlights: high,
-        imageUrl: imgData,
+        imageUrl: null,
         schedule: [
-          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: repotStart, end: repotEnd, text: `${repotStart}〜${repotEnd}月: 植え替え適期` }] },
-          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: pruneStart, end: pruneEnd, text: `${pruneStart}〜${pruneEnd}月: 枝整理剪定` }] },
-          { task: "芽摘み・芽切り・葉透かし", color: "teal", periods: [{ start: 5, end: 7, text: "5〜7月: 新芽の整理" }] },
-          { task: "針金かけ・整姿", color: "indigo", periods: [{ start: 10, end: 12, text: "10〜12月: 整姿作業" }] },
-          { task: "施肥（肥料）", color: "amber", periods: [{ start: 4, end: 5, text: "4〜5月: 春肥" }, { start: 9, end: 10, text: "9〜10月: 秋肥" }] },
-          { task: "水やり頻度目安", color: "blue", periods: [
-            { start: 1, end: 2, text: "2日に1回" },
-            { start: 3, end: 5, text: "1日1回" },
-            { start: 6, end: 8, text: "1日2回" },
-            { start: 9, end: 10, text: "1日1回" },
-            { start: 11, end: 12, text: "2日に1回" }
-          ]},
-          { task: "置き場所・日照・保護", color: "stone", periods: [
-            { start: 1, end: 2, text: "寒風よけ軒下" },
-            { start: 3, end: 6, text: "日当たり・通風良好" },
-            { start: 7, end: 8, text: "半日陰・遮光" },
-            { start: 9, end: 11, text: "よく日に当てる" },
-            { start: 12, end: 12, text: "霜よけ保護" }
-          ]}
+          { task: "植え替え（鉢替え・用土更新）", color: "orange", periods: [{ start: 3, end: 4, text: "3〜4月: 植え替え適期" }] },
+          { task: "剪定・枝整理・切り戻し", color: "green", periods: [{ start: 5, end: 6, text: "5〜6月: 枝整理剪定" }] },
+          { task: "水やり頻度目安", color: "blue", periods: [{ start: 1, end: 12, text: "季節に応じた水やり" }] }
         ]
       };
 
@@ -2712,90 +2616,67 @@
       renderSpeciesCatalog();
       closeSpeciesFormModal();
       showToast(`「${name}」を図鑑に追加しました`);
-      pushToGoogleSheet();
-    }
-
-    function sanitizeSingleBonsai(item) {
-      const copy = JSON.parse(JSON.stringify(item));
-      if (copy.imageUrl && copy.imageUrl.startsWith('data:image') && copy.imageUrl.length > 20000) {
-        copy.imageUrl = "local_stored_photo";
-      }
-      if (Array.isArray(copy.timeline)) {
-        copy.timeline = copy.timeline.map(tl => {
-          if (tl.imageUrl && tl.imageUrl.startsWith('data:image') && tl.imageUrl.length > 20000) {
-            tl.imageUrl = "local_stored_photo";
-          }
-          return tl;
-        });
-      }
-      return copy;
-    }
-
-    function sanitizeForSpreadsheet(list) {
-      if (!Array.isArray(list)) return [];
-      return list.map(item => sanitizeSingleBonsai(item));
-    }
-
-    async function pushToGoogleSheet() {
-      const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) return false;
-
-      try {
-        const safeBonsai = sanitizeForSpreadsheet(inMemoryBonsaiList || []);
-        const safeSpecies = sanitizeForSpreadsheet(inMemorySpeciesList || []);
-        const newTimestamp = new Date().toISOString();
-
-        const payload = {
-          action: 'syncAll',
-          bonsai: safeBonsai,
-          species: safeSpecies,
-          lastModified: newTimestamp
-        };
-
-        const response = await fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        });
-        const resJson = await response.json();
-        const ok = resJson && resJson.status === 'success';
-        if (ok) {
-          isSheetConnected = true;
-          localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, newTimestamp);
-          updateCloudStatusUI(true);
-          dismissUpdateBanner(false);
-        }
-        return ok;
-      } catch (err) {
-        console.warn("Push to Google Sheet skipped/failed:", err);
-        return false;
-      }
-    }
-
-    function pushToGoogleSheetWithFeedback() {
-      const count = (inMemoryBonsaiList || []).length;
-      showConfirmDialog(
-        'スプレッドシートへ送信の確認',
-        `手元の愛樹データ（${count}鉢）をスプレッドシートへ送信します。送信を実行しますか？`,
-        async () => {
-          showToast('スプレッドシートへ保存中...', 'refresh-cw');
-          const ok = await pushToGoogleSheet();
-          if (ok) {
-            updateSummaryStats();
-            renderBonsaiList();
-            showToast('スプレッドシートへ保存完了！');
-          } else {
-            showToast('送信に失敗しました。接続をご確認ください', 'alert-circle');
-          }
-        },
-        '送信する',
-        false
-      );
+      pushAllToGoogleSheet();
     }
 
     /**
-     * スプレッドシートから読み込み（相手の追加・削除を手元に完全同期・受信専用）
+     * 相手のデータと自分のデータを突き合わせ、どちらの記録も消さずに合体（マージ）
      */
+    function smartMergeBonsaiList(localList, remoteList) {
+      const mergedMap = new Map();
+
+      // リモートのデータをベースに登録
+      remoteList.forEach(rb => {
+        mergedMap.set(rb.id, JSON.parse(JSON.stringify(rb)));
+      });
+
+      // ローカルのデータを突き合わせ
+      localList.forEach(lb => {
+        if (!mergedMap.has(lb.id)) {
+          // リモートにない場合、手元で作成された未送信の鉢なら残す
+          mergedMap.set(lb.id, lb);
+        } else {
+          // 両方に存在する場合：タイムラインや履歴をユニオン合体
+          const rb = mergedMap.get(lb.id);
+          const combinedTimelineMap = new Map();
+
+          (rb.timeline || []).forEach(tl => combinedTimelineMap.set(tl.id, tl));
+          (lb.timeline || []).forEach(tl => combinedTimelineMap.set(tl.id, tl));
+
+          const mergedTimeline = Array.from(combinedTimelineMap.values());
+          mergedTimeline.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+          // 履歴も合体
+          const combinedHistory = [...(rb.history || [])];
+          (lb.history || []).forEach(lh => {
+            const exists = combinedHistory.some(rh => rh.time === lh.time && rh.by === lh.by);
+            if (!exists) combinedHistory.push(lh);
+          });
+          combinedHistory.sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0));
+
+          // より新しい更新日時のメタデータを採用
+          const remoteTime = new Date(rb.updatedAt || 0).getTime();
+          const localTime = new Date(lb.updatedAt || 0).getTime();
+
+          const winner = localTime > remoteTime ? lb : rb;
+          const mergedItem = { ...winner };
+          mergedItem.timeline = mergedTimeline;
+          mergedItem.history = combinedHistory;
+
+          // メモが両者で異なっている場合は両方残す
+          if (lb.memo && rb.memo && lb.memo !== rb.memo) {
+            if (!lb.memo.includes(rb.memo) && !rb.memo.includes(lb.memo)) {
+              mergedItem.memo = `${winner.memo}\n\n--- もう一方の記録 ---\n${winner === lb ? rb.memo : lb.memo}`;
+            }
+          }
+
+          mergedMap.set(lb.id, mergedItem);
+        }
+      });
+
+      return Array.from(mergedMap.values());
+    }
+
     async function pullFromGoogleSheet(showConfirm = true) {
       const executePull = async () => {
         showToast('スプレッドシートから最新データを読み込み中...', 'refresh-cw');
@@ -2806,7 +2687,6 @@
         }
 
         try {
-          // ブラウザのキャッシュを防止して常に最新の原本を取得
           const cacheBuster = `_t=${Date.now()}`;
           const sep = gasUrl.includes('?') ? '&' : '?';
           const response = await fetch(`${gasUrl}${sep}${cacheBuster}`, { method: 'GET' });
@@ -2814,13 +2694,22 @@
 
           if (data && data.status === 'success') {
             const remoteBonsai = Array.isArray(data.bonsai) ? data.bonsai : [];
-            
-            // スプレッドシートの原本を手元に完全適用（相手が削除したものは確実に消去）
-            inMemoryBonsaiList = remoteBonsai;
+            const remoteDeleted = Array.isArray(data.deletedHistory) ? data.deletedHistory : [];
+
+            // 削除された盆栽のID一覧を取得
+            const deletedIds = new Set(remoteDeleted.map(d => d.bonsaiId));
+
+            // 手元のデータとマージ（削除されたものは除外）
+            const currentLocal = loadBonsaiList().filter(b => !deletedIds.has(b.id));
+            inMemoryBonsaiList = smartMergeBonsaiList(currentLocal, remoteBonsai.filter(b => !deletedIds.has(b.id)));
 
             if (Array.isArray(data.species) && data.species.length > 0) {
               inMemorySpeciesList = data.species;
             }
+
+            // 削除履歴の更新
+            inMemoryDeletedHistory = remoteDeleted;
+
             if (data.lastModified) {
               localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, String(data.lastModified));
             }
@@ -2830,6 +2719,13 @@
             renderBonsaiList();
             renderDedicatedGantt();
             renderSpeciesCatalog();
+
+            if (currentCarteBonsaiId) {
+              const stillExists = inMemoryBonsaiList.some(b => b.id === currentCarteBonsaiId);
+              if (stillExists) openCarteModal(currentCarteBonsaiId);
+              else closeCarteModal();
+            }
+
             showToast(`最新データを取り込みました（${inMemoryBonsaiList.length}鉢）`);
             isSheetConnected = true;
             updateCloudStatusUI(true);
@@ -2844,10 +2740,10 @@
 
       if (showConfirm) {
         showConfirmDialog(
-          'スプレッドシートから読み込みの確認',
-          'スプレッドシートの最新データを手元へ取り込みます。お相手が追加・削除した内容がそのまま反映されます。よろしいですか？',
+          '最新データの取り込み',
+          'スプレッドシートから最新データを取り込み、お互いの記録を安全に合体します。よろしいですか？',
           executePull,
-          '読み込む',
+          '取り込む',
           false
         );
       } else {
@@ -2856,97 +2752,31 @@
     }
 
     async function syncWithGoogleSheet(showFeedback = true) {
-      const gasUrl = getGasWebAppUrl();
-      if (!gasUrl) {
-        if (showFeedback) {
-          showToast('スプレッドシート連携URLが未登録です', 'alert-circle');
-          openSyncGuideModal();
-        }
-        updateCloudStatusUI(false);
-        return;
-      }
-
-      if (showFeedback) {
-        showConfirmDialog(
-          'スプレッドシート同期の確認',
-          'スプレッドシートの最新データを手元へ取り込みます。よろしいですか？',
-          () => executeSyncWithGoogleSheet(gasUrl, true),
-          '同期する',
-          false
-        );
-        return;
-      }
-
-      await executeSyncWithGoogleSheet(gasUrl, false);
+      await pullFromGoogleSheet(showFeedback);
     }
 
-    async function executeSyncWithGoogleSheet(gasUrl, showFeedback) {
-      if (isSyncing) return;
-      isSyncing = true;
-      if (showFeedback) showToast('スプレッドシートと同期中...', 'refresh-cw');
+    async function pushAllToGoogleSheet() {
+      const gasUrl = getGasWebAppUrl();
+      if (!gasUrl) return false;
 
       try {
-        // キャッシュバスター付きGETで常に生データを取得
-        const cacheBuster = `_t=${Date.now()}`;
-        const sep = gasUrl.includes('?') ? '&' : '?';
-        const response = await fetch(`${gasUrl}${sep}${cacheBuster}`, { method: 'GET' });
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (jsonErr) {
-          throw new Error('Google側のアクセス権限設定をご確認ください（「全員」に公開されている必要があります）');
-        }
+        const payload = {
+          action: 'syncAll',
+          bonsai: loadBonsaiList(),
+          species: loadSpeciesList(),
+          deletedHistory: loadDeletedHistory(),
+          lastModified: new Date().toISOString()
+        };
 
-        if (data.status === 'success') {
-          const remoteBonsai = Array.isArray(data.bonsai) ? data.bonsai : [];
-          const remoteSpecies = Array.isArray(data.species) ? data.species : [];
-
-          // スプレッドシート原本を手元に完全反映（手元からの逆流送信は絶対に行わない）
-          inMemoryBonsaiList = remoteBonsai;
-          if (remoteSpecies.length > 0) {
-            inMemorySpeciesList = remoteSpecies;
-          }
-          if (data.lastModified) {
-            localStorage.setItem(STORAGE_KEY_LAST_TIMESTAMP, String(data.lastModified));
-          }
-
-          persistToLocalStorage();
-          updateSummaryStats();
-          renderBonsaiList();
-          renderDedicatedGantt();
-          renderSpeciesCatalog();
-
-          if (currentCarteBonsaiId) {
-            const stillExists = inMemoryBonsaiList.some(b => b.id === currentCarteBonsaiId);
-            if (stillExists) {
-              openCarteModal(currentCarteBonsaiId);
-            } else {
-              closeCarteModal();
-            }
-          }
-
-          isSheetConnected = true;
-          updateCloudStatusUI(true);
-          dismissUpdateBanner(false);
-          if (showFeedback) showToast('スプレッドシートと同期完了！');
-        } else {
-          throw new Error(data.message || '同期エラー');
-        }
-      } catch (err) {
-        console.warn("Google Sheet sync error:", err);
-        isSheetConnected = false;
-        updateCloudStatusUI(false);
-        
-        let errMsg = '同期に失敗しました。';
-        if (err.message && err.message.includes('全員')) {
-          errMsg = err.message;
-        } else if (err.name === 'TypeError' || String(err).includes('Failed to fetch')) {
-          errMsg = '接続が遮断されました。GASのデプロイで「アクセスできるユーザー：全員」になっているかご確認ください。';
-        }
-        if (showFeedback) showToast(errMsg, 'alert-circle');
-      } finally {
-        isSyncing = false;
+        const response = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+        const resJson = await response.json();
+        return resJson && resJson.status === 'success';
+      } catch (e) {
+        return false;
       }
     }
 
@@ -3026,7 +2856,7 @@
       const next = !current;
       localStorage.setItem(STORAGE_KEY_BG_MOTION, String(next));
       applyCustomBackground();
-      showToast(next ? '背景が流れるアニメーションを有効にしました' : '背景のアニメーションを停止しました', 'wind');
+      showToast(next ? '背景が流れる動きを有効にしました' : '背景の動きを停止しました', 'wind');
     }
 
     function toggleBackgroundSlideshow() {
@@ -3034,7 +2864,7 @@
       const next = !current;
       localStorage.setItem(STORAGE_KEY_BG_SLIDESHOW, String(next));
       applyCustomBackground();
-      showToast(next ? '愛樹写真が流れる自動スライドを開始しました' : '自動スライドを停止しました', 'play');
+      showToast(next ? '愛樹写真の自動スライドを開始しました' : '自動スライドを停止しました', 'play');
     }
 
     function setupBackgroundSlideshow(enabled) {
@@ -3073,13 +2903,12 @@
       if (!currentCarteBonsaiId) return;
       const b = inMemoryBonsaiList.find(item => item.id === currentCarteBonsaiId);
       if (!b || !b.imageUrl) {
-        showToast('この盆栽の写真が登録されていません', 'alert-circle');
+        showToast('写真が登録されていません', 'alert-circle');
         return;
       }
-
       localStorage.setItem(STORAGE_KEY_BG_IMAGE, b.imageUrl);
       applyCustomBackground();
-      showToast(`「${b.name}」の写真をアプリの背景に設定しました！`);
+      showToast(`「${b.name}」の写真を透かし背景に設定しました！`);
     }
 
     function removeCustomBackground() {
@@ -3093,7 +2922,6 @@
       const syncText = document.getElementById('syncStatusText');
       const syncDotBg = document.getElementById('syncDotBg');
       const syncPing = document.getElementById('syncPingAnim');
-      const displayEl = document.getElementById('displayUserId');
       const banner = document.getElementById('cloudStatusBanner');
 
       if (isConnected) {
@@ -3103,7 +2931,6 @@
         if (syncText) syncText.textContent = "同期完了";
         if (syncDotBg) syncDotBg.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
         if (syncPing) syncPing.classList.remove('hidden');
-        if (displayEl) displayEl.textContent = "Googleスプレッドシート連携中 (完全同期・写真連動消去)";
 
         if (banner) {
           banner.className = "p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 flex items-start gap-2 text-emerald-950";
@@ -3112,7 +2939,7 @@
             <div>
               <strong class="font-bold text-[10.5px] block">スプレッドシート連携が正常に動作しています</strong>
               <p class="text-[9.5px] text-emerald-800 mt-0.5 leading-relaxed">
-                盆栽を削除した際は、スプレッドシートの行とGoogleドライブの写真が自動的に消去されます。
+                おふたりの編集内容はお互いに消えずに合体保存され、削除された盆栽は「削除履歴」からいつでも復元できます。
               </p>
             </div>
           `;
@@ -3121,19 +2948,18 @@
         if (syncBadge) {
           syncBadge.className = "flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300 shadow-sm hover:bg-amber-100 active:scale-95 transition cursor-pointer";
         }
-        if (syncText) syncText.textContent = "未接続・オフライン";
+        if (syncText) syncText.textContent = "オフライン";
         if (syncDotBg) syncDotBg.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-400";
         if (syncPing) syncPing.classList.add('hidden');
-        if (displayEl) displayEl.textContent = "オフライン（手元保存）";
 
         if (banner) {
           banner.className = "p-2.5 rounded-xl border border-amber-200 bg-amber-50/80 flex items-start gap-2 text-amber-950";
           banner.innerHTML = `
             <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5"></i>
             <div>
-              <strong class="font-bold text-[10.5px] block">現在は「手元保存（オフライン）」で稼働しています</strong>
+              <strong class="font-bold text-[10.5px] block">手元保存（オフライン）で稼働中</strong>
               <p class="text-[9.5px] text-amber-900 mt-0.5 leading-relaxed">
-                Googleスプレッドシートへの通信接続を確認中か、オフライン状態です。接続が回復すると自動的に同期が再開されます。
+                通信が回復すると自動的に再接続されます。
               </p>
             </div>
           `;
@@ -3153,9 +2979,7 @@
           return;
         }
         localStorage.setItem(STORAGE_KEY_GAS_URL, rawUrl);
-        showToast('カスタム設定を保存しました。同期を試行します...');
-      } else {
-        showToast('同期を試行します...');
+        showToast('カスタム設定を保存しました');
       }
 
       syncWithGoogleSheet(true);
@@ -3170,7 +2994,7 @@
           localStorage.removeItem(STORAGE_KEY_GAS_URL);
           const input = document.getElementById('gasWebAppUrlInput');
           if (input) input.value = '';
-          showToast('暗号化保護された既定のエンドポイントに復帰しました');
+          showToast('既定のエンドポイントに復帰しました');
           syncWithGoogleSheet(true);
         }
       );
@@ -3180,10 +3004,7 @@
       const modal = document.getElementById('syncGuideModal');
       const input = document.getElementById('gasWebAppUrlInput');
       const custom = (localStorage.getItem(STORAGE_KEY_GAS_URL) || '').trim();
-      if (input) {
-        input.value = custom ? custom : '';
-      }
-
+      if (input) input.value = custom ? custom : '';
       if (modal) {
         modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
@@ -3215,10 +3036,11 @@
 
     function exportData() {
       const data = {
-        version: "2.1",
+        version: "3.0",
         exportDate: new Date().toISOString(),
         bonsai: loadBonsaiList(),
-        species: loadSpeciesList()
+        species: loadSpeciesList(),
+        deletedHistory: loadDeletedHistory()
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -3229,7 +3051,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('台帳データをJSONとして書き出しました');
+      showToast('データをJSONとして書き出しました');
     }
 
     async function importData(e) {
@@ -3240,30 +3062,20 @@
       reader.onload = async (event) => {
         try {
           const parsed = JSON.parse(event.target.result);
-          if (Array.isArray(parsed.bonsai)) {
-            inMemoryBonsaiList = parsed.bonsai;
-          }
-          if (Array.isArray(parsed.species)) {
-            inMemorySpeciesList = parsed.species;
-          }
+          if (Array.isArray(parsed.bonsai)) inMemoryBonsaiList = parsed.bonsai;
+          if (Array.isArray(parsed.species)) inMemorySpeciesList = parsed.species;
+          if (Array.isArray(parsed.deletedHistory)) inMemoryDeletedHistory = parsed.deletedHistory;
+
           persistToLocalStorage();
           updateSummaryStats();
           renderBonsaiList();
           renderDedicatedGantt();
           renderSpeciesCatalog();
 
-          showToast('復元中...スプレッドシートへ安全保存しています', 'refresh-cw');
-          const pushSuccess = await pushToGoogleSheet();
-
-          if (pushSuccess) {
-            showToast('バックアップから復元し、スプレッドシートへ保存完了！');
-            isSheetConnected = true;
-            updateCloudStatusUI(true);
-          } else {
-            showToast('手元に復元完了（スプレッドシート送信を確認中）');
-          }
+          showToast('復元中...スプレッドシートへ保存しています', 'refresh-cw');
+          await pushAllToGoogleSheet();
+          showToast('バックアップから復元完了！');
         } catch (err) {
-          console.error("Import error:", err);
           showToast('ファイルの読み込みに失敗しました', 'alert-circle');
         } finally {
           e.target.value = '';
@@ -3290,14 +3102,9 @@
     window.handleTimelineImageUpload = handleTimelineImageUpload;
     window.handleTimelineSubmit = handleTimelineSubmit;
     window.confirmDeleteBonsai = confirmDeleteBonsai;
-    window.clearAllBonsaiData = clearAllBonsaiData;
     window.openNewSpeciesModal = openNewSpeciesModal;
     window.closeSpeciesFormModal = closeSpeciesFormModal;
     window.handleSpeciesFormSubmit = handleSpeciesFormSubmit;
-    window.handleSpeciesImageUpload = handleSpeciesImageUpload;
-    window.triggerSpeciesImageChange = triggerSpeciesImageChange;
-    window.handleDirectSpeciesImageChange = handleDirectSpeciesImageChange;
-    window.adoptSpecies = adoptSpecies;
     window.toggleDataMenu = toggleDataMenu;
     window.exportData = exportData;
     window.importData = importData;
@@ -3306,22 +3113,27 @@
     window.saveAndSyncGasConfig = saveAndSyncGasConfig;
     window.clearGasConfig = clearGasConfig;
     window.syncWithGoogleSheet = syncWithGoogleSheet;
-    window.pushToGoogleSheetWithFeedback = pushToGoogleSheetWithFeedback;
     window.pullFromGoogleSheet = pullFromGoogleSheet;
     window.setAsAppBackground = setAsAppBackground;
     window.removeCustomBackground = removeCustomBackground;
     window.toggleBackgroundMotion = toggleBackgroundMotion;
     window.toggleBackgroundSlideshow = toggleBackgroundSlideshow;
-    window.checkAndSyncDriveImages = checkAndSyncDriveImages;
-    window.closeDriveImageSyncModal = closeDriveImageSyncModal;
-    window.executeDriveBatchSync = executeDriveBatchSync;
     window.dismissUpdateBanner = dismissUpdateBanner;
     window.handleAcceptRemoteUpdate = handleAcceptRemoteUpdate;
     window.handleBgOpacityChange = handleBgOpacityChange;
+    window.openUserNameModal = openUserNameModal;
+    window.closeUserNameModal = closeUserNameModal;
+    window.saveUserNameFromInput = saveUserNameFromInput;
+    window.openDeletedHistoryModal = openDeletedHistoryModal;
+    window.closeDeletedHistoryModal = closeDeletedHistoryModal;
+    window.restoreBonsaiFromHistory = restoreBonsaiFromHistory;
+    window.confirmClearAllDeletedHistory = confirmClearAllDeletedHistory;
 
     window.addEventListener('DOMContentLoaded', () => {
+      initUserName();
       loadBonsaiList();
       loadSpeciesList();
+      loadDeletedHistory();
       applyCustomBackground();
       updateSummaryStats();
       renderBonsaiList();
@@ -3334,6 +3146,10 @@
         startRemotePolling();
       } else {
         updateCloudStatusUI(false);
+      }
+
+      if (!localStorage.getItem(STORAGE_KEY_USER_NAME)) {
+        setTimeout(openUserNameModal, 600);
       }
 
       safeCreateIcons();
