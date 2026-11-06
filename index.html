@@ -2,15 +2,15 @@
 <html lang="ja">
 <head>
   <link rel="apple-touch-icon" href="bonsai.JPG">
-  <link rel="manifest" href="manifest.json"><!DOCTYPE html>
+  <link rel="manifest" href="manifest.json">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>盆栽手帖 - 愛樹台帳と手入れ暦</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@1.70.0"></script>
   <!-- Google Fonts (Shippori Mincho, Inter, Zen Kaku Gothic New) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -400,7 +400,7 @@
         <!-- 基本情報グリッド -->
         <div class="flex flex-col sm:flex-row gap-3">
           <div class="w-full sm:w-44 h-48 sm:h-44 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 relative group">
-            <img id="carteMainImage" src="" alt="愛樹写真" class="w-full h-full object-cover">
+            <img id="carteMainImage" src="" alt="愛樹写真" class="w-full h-full object-cover cursor-zoom-in" onclick="openPhotoViewer(this.src)">
             <button onclick="setBonsaiAsBackgroundFromCarte()" class="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-md bg-stone-900/80 hover:bg-stone-900 text-white text-[9.5px] font-semibold backdrop-blur-xs flex items-center gap-1 transition shadow-sm">
               <i data-lucide="image" class="w-3 h-3 text-emerald-400"></i>
               <span>背景に設定</span>
@@ -816,6 +816,12 @@
     </div>
   </div>
 
+  <!-- 写真の全画面表示 -->
+  <div id="photoViewer" class="hidden fixed inset-0 z-[100] bg-black/90 items-center justify-center p-2" onclick="closePhotoViewer()">
+    <img id="photoViewerImg" src="" alt="写真の拡大表示" class="max-w-full max-h-full object-contain">
+    <button type="button" onclick="closePhotoViewer()" class="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/15 text-white text-xs font-bold">閉じる</button>
+  </div>
+
   <script>
     /* -------------------------------------------------------------
      * アプリケーション初期データと定数
@@ -1024,10 +1030,15 @@
     }
 
     function persistToLocalStorage() {
-      localStorage.setItem(STORAGE_KEY_BONSAI, JSON.stringify(inMemoryBonsaiList));
-      localStorage.setItem(STORAGE_KEY_SPECIES, JSON.stringify(inMemorySpeciesList));
-      localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(inMemoryDeletedHistory));
-      localStorage.setItem(STORAGE_KEY_RECENT_DELETED_IDS, JSON.stringify(Array.from(recentDeletedIds)));
+      try {
+        localStorage.setItem(STORAGE_KEY_BONSAI, JSON.stringify(inMemoryBonsaiList));
+        localStorage.setItem(STORAGE_KEY_SPECIES, JSON.stringify(inMemorySpeciesList));
+        localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(inMemoryDeletedHistory));
+        localStorage.setItem(STORAGE_KEY_RECENT_DELETED_IDS, JSON.stringify(Array.from(recentDeletedIds)));
+      } catch (e) {
+        console.error('localStorage save error:', e);
+        showToast('端末への保存に失敗しました（容量不足の可能性）', 'alert-circle');
+      }
     }
 
     /* -------------------------------------------------------------
@@ -2408,6 +2419,7 @@
     async function checkRemoteUpdates() {
       const gasUrl = getGasUrl();
       if (!gasUrl) return;
+      if (!(await flushPendingQueue())) return;
 
       try {
         const url = `${gasUrl}?action=getLatestTimestamp&_t=${Date.now()}`;
@@ -2426,30 +2438,41 @@
       }
     }
 
+    // 取り込めたら true
     async function fetchAllFromRemote(isSilent = false) {
       const gasUrl = getGasUrl();
-      if (!gasUrl) return;
+      if (!gasUrl) return false;
+      // 未送信が残っていると手元の変更が上書きされるため、先に送る
+      if (!(await flushPendingQueue())) return false;
 
       try {
+        const changeCounterAtStart = localChangeCounter;
         const url = `${gasUrl}?_t=${Date.now()}`;
         const res = await fetch(url);
-        if (!res.ok) return;
+        if (!res.ok) return false;
 
         const data = await res.json();
         if (data.status === 'success') {
+          // 取得中に手元で変更があった場合、この古い内容は反映しない
+          if (changeCounterAtStart !== localChangeCounter || hasPendingSends()) return false;
+
           if (isEditingActiveModal) {
             pendingRemoteUpdateData = data;
-            return;
+            return true;
           }
 
           applyRemoteDataSafely(data, isSilent);
+          return true;
         }
+        return false;
       } catch (err) {
         console.error('Remote fetch error:', err);
+        return false;
       }
     }
 
     function applyRemoteDataSafely(data, isSilent = false) {
+      if (hasPendingSends()) return;
       if (Array.isArray(data.bonsai)) {
         inMemoryBonsaiList = data.bonsai.filter(b => !recentDeletedIds.has(b.id));
       }
@@ -2490,10 +2513,10 @@
     }
 
     function checkPendingUpdateAfterModalClose() {
+      // 編集中に届いたデータは保存前の古い内容なので使わず、取り直す
       if (pendingRemoteUpdateData) {
-        const data = pendingRemoteUpdateData;
         pendingRemoteUpdateData = null;
-        applyRemoteDataSafely(data, true);
+        fetchAllFromRemote(true);
       }
     }
 
@@ -2509,8 +2532,12 @@
         btn.innerHTML = `<span class="inline-block animate-spin mr-1">🔄</span> 取り込み中...`;
       }
       try {
-        await fetchAllFromRemote(false);
-        showToast('スプレッドシートから最新データを取り込みました');
+        const ok = await fetchAllFromRemote(false);
+        if (ok) {
+          showToast('スプレッドシートから最新データを取り込みました');
+        } else {
+          showToast('取り込めませんでした。通信状況を確認してください', 'alert-circle');
+        }
       } catch (e) {
         showToast('通信エラーが発生しました', 'alert-circle');
       } finally {
@@ -2534,8 +2561,8 @@
         btn.innerHTML = `<span class="inline-block animate-spin mr-1">☁️</span> 送信中...`;
       }
       try {
-        await pushAllToRemote();
-        showToast('手元の全データをスプレッドシートへ送信しました');
+        const ok = await pushAllToRemote();
+        if (ok) showToast('手元の全データをスプレッドシートへ送信しました');
       } catch (e) {
         showToast('送信中にエラーが発生しました', 'alert-circle');
       } finally {
@@ -2547,116 +2574,118 @@
       }
     }
 
-    async function saveBonsaiToRemote(bonsai) {
-      const gasUrl = getGasUrl();
-      if (!gasUrl) return;
+    /* -------------------------------------------------------------
+     * 送信キュー
+     * 送信に失敗したものは端末に残し、届くまで再送する。
+     * 未送信がある間はスプレッドシートの内容で手元を上書きしない。
+     * ------------------------------------------------------------- */
+    const STORAGE_KEY_PENDING = 'bonsai_techo_pending_sends';
+    let pendingQueue = loadPendingQueue();
+    let localChangeCounter = 0;
+    let lastSendFailed = pendingQueue.length > 0;
+    let flushChain = Promise.resolve(true);
 
+    function loadPendingQueue() {
       try {
-        const newTimestamp = new Date().toISOString();
-        localStorage.setItem('bonsai_techo_last_synced_time', newTimestamp);
-
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: 'saveBonsai',
-            bonsai: bonsai,
-            lastModified: newTimestamp
-          })
-        });
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY_PENDING) || '[]');
+        return Array.isArray(parsed) ? parsed : [];
       } catch (e) {
-        console.warn('saveBonsai remote post error:', e);
+        return [];
       }
     }
 
-    async function deleteBonsaiFromRemote(bonsaiId, deletedEntry) {
-      const gasUrl = getGasUrl();
-      if (!gasUrl) return;
-
+    function persistPendingQueue() {
       try {
-        const newTimestamp = new Date().toISOString();
-        localStorage.setItem('bonsai_techo_last_synced_time', newTimestamp);
-
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: 'deleteBonsai',
-            bonsaiId: bonsaiId,
-            deletedEntry: deletedEntry,
-            lastModified: newTimestamp
-          })
-        });
+        localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(pendingQueue));
       } catch (e) {
-        console.warn('deleteBonsai remote post error:', e);
+        console.warn('pending queue save error:', e);
       }
     }
 
-    async function restoreBonsaiToRemote(historyId, bonsai) {
-      const gasUrl = getGasUrl();
-      if (!gasUrl) return;
-
-      try {
-        const newTimestamp = new Date().toISOString();
-        localStorage.setItem('bonsai_techo_last_synced_time', newTimestamp);
-
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: 'restoreBonsai',
-            historyId: historyId,
-            bonsai: bonsai,
-            lastModified: newTimestamp
-          })
-        });
-      } catch (e) {
-        console.warn('restoreBonsai remote post error:', e);
-      }
+    function hasPendingSends() {
+      return pendingQueue.length > 0;
     }
 
-    async function clearDeletedHistoryRemote() {
-      const gasUrl = getGasUrl();
-      if (!gasUrl) return;
-
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'clearDeletedHistory' })
-        });
-      } catch (e) {
-        console.warn('clearDeletedHistory remote error:', e);
+    // 送信内容をキューに積んで送る。届けば true
+    async function sendToRemote(payload) {
+      if (!getGasUrl()) return true;
+      localChangeCounter++;
+      pendingQueue.push(payload);
+      persistPendingQueue();
+      const ok = await flushPendingQueue();
+      if (!ok) {
+        showToast('送信できませんでした。電波が戻ったら自動で再送します', 'cloud-off');
       }
+      return ok;
     }
 
-    async function pushAllToRemote() {
+    // 未送信を古い順に送る（同時に走らないよう直列化）
+    function flushPendingQueue() {
+      flushChain = flushChain.then(doFlushPendingQueue, doFlushPendingQueue);
+      return flushChain;
+    }
+
+    async function doFlushPendingQueue() {
       const gasUrl = getGasUrl();
-      if (!gasUrl) return;
+      if (!gasUrl || pendingQueue.length === 0) return true;
+      const hadFailure = lastSendFailed;
 
-      try {
-        const newTimestamp = new Date().toISOString();
-        localStorage.setItem('bonsai_techo_last_synced_time', newTimestamp);
+      while (pendingQueue.length > 0) {
+        const item = pendingQueue[0];
+        // 全件送信は送る瞬間の最新データで組み立てる
+        const body = item.action === 'syncAll'
+          ? { action: 'syncAll', bonsai: inMemoryBonsaiList, species: inMemorySpeciesList, deletedHistory: inMemoryDeletedHistory }
+          : { ...item };
+        // 他の端末が変更に気づけるよう、時刻は実際に送る時点のものにする
+        const sentAt = new Date().toISOString();
+        if (item.action !== 'clearDeletedHistory') body.lastModified = sentAt;
 
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: 'syncAll',
-            bonsai: inMemoryBonsaiList,
-            species: inMemorySpeciesList,
-            deletedHistory: inMemoryDeletedHistory,
-            lastModified: newTimestamp
-          })
-        });
-      } catch (e) {
-        console.warn('pushAll remote error:', e);
+        try {
+          // no-cors でも通信できなければ例外になる
+          await fetch(gasUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(body)
+          });
+        } catch (e) {
+          console.warn(`${item.action} remote post error:`, e);
+          lastSendFailed = true;
+          return false;
+        }
+
+        if (body.lastModified) {
+          localStorage.setItem('bonsai_techo_last_synced_time', body.lastModified);
+        }
+        pendingQueue.shift();
+        persistPendingQueue();
       }
+
+      lastSendFailed = false;
+      if (hadFailure) showToast('未送信だった記録を送信しました', 'cloud');
+      return true;
+    }
+
+    function saveBonsaiToRemote(bonsai) {
+      return sendToRemote({ action: 'saveBonsai', bonsai: bonsai });
+    }
+
+    function deleteBonsaiFromRemote(bonsaiId, deletedEntry) {
+      return sendToRemote({ action: 'deleteBonsai', bonsaiId: bonsaiId, deletedEntry: deletedEntry });
+    }
+
+    function restoreBonsaiToRemote(historyId, bonsai) {
+      return sendToRemote({ action: 'restoreBonsai', historyId: historyId, bonsai: bonsai });
+    }
+
+    function clearDeletedHistoryRemote() {
+      return sendToRemote({ action: 'clearDeletedHistory' });
+    }
+
+    function pushAllToRemote() {
+      // 未送信の全件送信が既にあれば1つにまとめる（中身は送信時に組み立てる）
+      pendingQueue = pendingQueue.filter(item => item.action !== 'syncAll');
+      return sendToRemote({ action: 'syncAll' });
     }
 
     /* -------------------------------------------------------------
@@ -2952,6 +2981,34 @@
     window.handleManualPushAll = handleManualPushAll;
     window.closeCustomConfirm = closeCustomConfirm;
 
+    const POLLING_INTERVAL_MS = 30000;
+
+    function startPolling() {
+      stopPolling();
+      pollingTimer = setInterval(checkRemoteUpdates, POLLING_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+      if (pollingTimer) clearInterval(pollingTimer);
+      pollingTimer = null;
+    }
+
+    // 写真を全画面で表示（ピンチで拡大できる）
+    function openPhotoViewer(src) {
+      if (!src || src.startsWith('data:image/svg')) return;
+      const viewer = document.getElementById('photoViewer');
+      document.getElementById('photoViewerImg').src = src;
+      viewer.classList.remove('hidden');
+      viewer.classList.add('flex');
+    }
+
+    function closePhotoViewer() {
+      const viewer = document.getElementById('photoViewer');
+      viewer.classList.add('hidden');
+      viewer.classList.remove('flex');
+      document.getElementById('photoViewerImg').src = '';
+    }
+
     // DOMロード時
     window.addEventListener('DOMContentLoaded', () => {
       inMemoryBonsaiList = loadBonsaiList();
@@ -2977,15 +3034,26 @@
       // 起動時即座に最新状態を取得
       fetchAllFromRemote(true);
 
-      // 5秒おきの超軽量同期チェック
-      pollingTimer = setInterval(checkRemoteUpdates, 5000);
+      // 画面を開いている間だけ30秒おきに更新確認
+      startPolling();
 
-      // タブ・画面復帰時の即時同期
+      // 画面復帰時は即時同期、閉じている間は確認を止める
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           fetchAllFromRemote(true);
+          startPolling();
+        } else {
+          stopPolling();
         }
       });
+
+      // 電波が戻ったら未送信を送って最新を取得
+      window.addEventListener('online', () => fetchAllFromRemote(true));
+
+      // 電波がなくてもアプリを開けるようにする
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW register error:', err));
+      }
     });
   </script>
 </body>
